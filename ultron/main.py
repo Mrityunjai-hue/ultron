@@ -50,12 +50,36 @@ async def run_live_agent(no_ui: bool = False, is_startup: bool = False):
 
     if not config.gemini_api_key:
         print("\n=======================================================")
-        print(" [!] ERROR: GEMINI_API_KEY is not configured.")
-        print(" Please set GEMINI_API_KEY in Windows DPAPI store or environment:")
-        print("     $env:GEMINI_API_KEY=\"your_api_key_here\"")
-        print("=======================================================\n")
-        lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
-        return
+        print(f"             {__product_name__} v{__version__} — FIRST-RUN SETUP             ")
+        print("=======================================================")
+        print(" GEMINI_API_KEY is required for real-time voice intelligence.")
+        print(" Free Gemini API Key available at: https://aistudio.google.com/app/apikey")
+        print("-------------------------------------------------------")
+        try:
+            if sys.stdin and sys.stdin.isatty():
+                entered_key = input(" Enter your Gemini API Key: ").strip()
+                if entered_key:
+                    from ultron.core.credentials import get_credential_manager
+                    get_credential_manager().set_api_key("GEMINI_API_KEY", entered_key)
+                    config.gemini_api_key = entered_key
+                    print("\n[OK] API key securely encrypted in Windows DPAPI store.\n")
+                else:
+                    print("\n[!] Setup incomplete: GEMINI_API_KEY is required to launch ULTRON.")
+                    print(" Please restart ULTRON and enter your API key or configure it via CLI:")
+                    print("     Ultron.exe --set-api-key <YOUR_KEY>")
+                    input("\nPress Enter to exit...")
+                    lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
+                    return
+            else:
+                print(" [!] ERROR: GEMINI_API_KEY is not configured.")
+                print(" Please set GEMINI_API_KEY in Windows DPAPI store or environment:")
+                print("     $env:GEMINI_API_KEY=\"your_api_key_here\"")
+                print("=======================================================\n")
+                lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
+                return
+        except (EOFError, KeyboardInterrupt):
+            lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
+            return
 
     print("\n=======================================================")
     print(f"             {__product_name__} v{__version__} — REALTIME AI AGENT             ")
@@ -201,6 +225,11 @@ def main():
         asyncio.run(run_live_agent(no_ui=args.no_ui, is_startup=args.startup))
     except KeyboardInterrupt:
         print("\nExited.")
+    except Exception as e:
+        logger.critical(f"[ULTRON] Uncaught fatal error: {e}", exc_info=True)
+        print(f"\n[FATAL ERROR] {e}")
+        if sys.stdin and sys.stdin.isatty():
+            input("\nPress Enter to exit...")
     finally:
         single_instance.release()
 
