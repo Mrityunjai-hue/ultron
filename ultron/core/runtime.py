@@ -108,6 +108,12 @@ class UltronRuntime:
         """Returns True if the realtime engine audio and connection loops are active."""
         return self._running
 
+    def __getattr__(self, name: str):
+        """Fallback attribute access — prevents AttributeError on is_running in frozen binaries."""
+        if name == "is_running":
+            return self.__dict__.get("_running", False)
+        raise AttributeError(f"'UltronRuntime' object has no attribute '{name}'")
+
     def _transition(self, new_state: ActivityState, operation: str = "none", message: str = ""):
         """Publishes state change event."""
         if self.state != new_state:
