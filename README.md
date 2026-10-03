@@ -4,11 +4,19 @@
 ### Sovereign Realtime Voice AI Desktop Agent for Windows
 
 [![Windows 10/11](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6?logo=windows&logoColor=white)](https://microsoft.com/windows)
+[![Release](https://img.shields.io/badge/Release-v0.1.0%20(Windows%20x64)-0052CC?logo=github&logoColor=white)](https://github.com/Mrityunjai-hue/ultron/releases/latest)
+[![Download ZIP](https://img.shields.io/badge/Download-Standalone%20ZIP%20(v0.1.0)-success?logo=windows&logoColor=white)](https://github.com/Mrityunjai-hue/ultron/releases/download/v0.1.0/Ultron-v0.1.0-windows-x64.zip)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.14-3776AB?logo=python&logoColor=white)](https://python.org)
 [![Gemini Live](https://img.shields.io/badge/Model-Gemini%202.5%20Live-8E75B2?logo=google&logoColor=white)](https://ai.google.dev)
 [![Safety 3-Tier](https://img.shields.io/badge/Security-3--Tier%20Gateway-10B981)](#safety-model)
-[![Tests Passing](https://img.shields.io/badge/Tests-265%2F265%20Passed-10B981)](#development)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+<br/>
+
+### ⬇️ **[Download ULTRON v0.1.0 for Windows (Portable .ZIP)](https://github.com/Mrityunjai-hue/ultron/releases/download/v0.1.0/Ultron-v0.1.0-windows-x64.zip)**
+**[📦 All Release Assets & Checksums](https://github.com/Mrityunjai-hue/ultron/releases/latest)** &nbsp;•&nbsp; **[📄 SHA256SUMS](https://github.com/Mrityunjai-hue/ultron/releases/download/v0.1.0/SHA256SUMS.txt)** &nbsp;•&nbsp; **[🛡️ SBOM (CycloneDX)](https://github.com/Mrityunjai-hue/ultron/releases/download/v0.1.0/sbom.json)**
+
+*Zero dependencies required • Extract and launch `ultron.exe` • No Python, Git, or compiler needed*
 
 <br/>
 
@@ -137,14 +145,18 @@ flowchart TD
 
 ## 📦 Installation
 
-### Option A: Standalone Windows Installer (Recommended)
-Download the latest standalone distribution from [**GitHub Releases**](https://github.com/Mrityunjai-hue/ultron/releases):
-- **Portable ZIP**: `Ultron-v0.1.0-windows-x64.zip` (Extract and run `ultron.exe`)
-- **Setup Package**: `Ultron-Setup-0.1.0.py`
+### Option A: Standalone Windows Binary (Recommended)
 
-*Zero external dependencies on Python, Git, or compilers required for standalone binary.*
+| Release Asset | Format | Direct Download Link | Purpose |
+| :--- | :---: | :--- | :--- |
+| **Ultron Portable ZIP** | `.zip` | [**Ultron-v0.1.0-windows-x64.zip**](https://github.com/Mrityunjai-hue/ultron/releases/download/v0.1.0/Ultron-v0.1.0-windows-x64.zip) | Standalone Windows x64 binary. Extract & run `ultron.exe`. |
+| **Ultron Setup Installer** | `.py` | [**Ultron-Setup-0.1.0.py**](https://github.com/Mrityunjai-hue/ultron/releases/download/v0.1.0/Ultron-Setup-0.1.0.py) | Self-contained automated Windows installer package. |
+| **Checksum Manifest** | `.txt` | [**SHA256SUMS.txt**](https://github.com/Mrityunjai-hue/ultron/releases/download/v0.1.0/SHA256SUMS.txt) | Official SHA256 verification digests. |
+| **Software Bill of Materials** | `.json` | [**sbom.json**](https://github.com/Mrityunjai-hue/ultron/releases/download/v0.1.0/sbom.json) | CycloneDX 1.4 supply chain SBOM. |
 
-### Option B: Build & Run from Source
+> **Zero Dependencies**: The standalone Windows distribution does **not** require Python, Git, C++ build tools, or runtime dependencies. Simply extract the ZIP archive and run `ultron.exe`.
+
+### Option B: Build & Run from Source (Contributors)
 ```powershell
 # 1. Clone repository
 git clone https://github.com/Mrityunjai-hue/ultron.git
