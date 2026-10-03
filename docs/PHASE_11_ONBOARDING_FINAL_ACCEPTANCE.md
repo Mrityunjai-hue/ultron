@@ -110,7 +110,7 @@ Full test suite executed in Windows 11 real runtime environment:
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.14.2, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\Mrityunjai\.gemini\antigravity-ide\scratch\ultron
+rootdir: <ULTRON_WORKSPACE_ROOT>
 configfile: pyproject.toml
 testpaths: tests
 plugins: anyio-4.12.1, Faker-40.1.2

@@ -74,7 +74,7 @@ $$\text{REAL ACTION} \longrightarrow \text{REAL BACKEND STATE} \longrightarrow \
 
 ## 2. Section A: Comprehensive Repository Audit
 
-A complete inspection of all directories in `C:\Users\Mrityunjai\.gemini\antigravity-ide\scratch\ultron` confirms the following repository structure:
+A complete inspection of all directories in the ULTRON repository root confirms the following structure:
 
 ```
 ultron/

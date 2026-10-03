@@ -36,11 +36,10 @@ def run_brain_test() -> Dict[str, Any]:
 
     results = {}
 
-    # 1. Ollama Installation & Daemon Check
     ollama_cli = (
         shutil.which("ollama") or 
         shutil.which("ollama.exe") or 
-        r"C:\Users\Mrityunjai\AppData\Local\Programs\Ollama\ollama.exe"
+        str(Path.home() / "AppData" / "Local" / "Programs" / "Ollama" / "ollama.exe")
     )
     ollama_status = "NOT INSTALLED"
     ollama_models = []

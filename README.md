@@ -12,7 +12,7 @@
 
 <br/>
 
-<img src="docs/assets/hero.jpg" alt="ULTRON Native Desktop Presence" width="100%" style="border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.6);" />
+<img src="docs/assets/hero/hero.jpg" alt="ULTRON Native Desktop Presence" width="100%" style="border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.6);" />
 
 <br/><br/>
 
@@ -68,23 +68,23 @@ ULTRON features the **Liquid Onboarding Experience**: a seamless transformation 
 
 | 1. Resting Top Notch | 2. Liquid Downward Expansion |
 | :---: | :---: |
-| <img src="docs/assets/01_resting_notch.png" width="380" /> | <img src="docs/assets/02_expansion_beginning.png" width="380" /> |
+| <img src="docs/assets/onboarding/01_resting_notch.png" width="380" /> | <img src="docs/assets/onboarding/02_expansion_beginning.png" width="380" /> |
 
 | 3. Step 01: Owner Identity | 4. Step 02: Conversational Addressing |
 | :---: | :---: |
-| <img src="docs/assets/03_step01_owner.png" width="380" /> | <img src="docs/assets/04_step02_addressing.png" width="380" /> |
+| <img src="docs/assets/onboarding/03_step01_owner.png" width="380" /> | <img src="docs/assets/onboarding/04_step02_addressing.png" width="380" /> |
 
 | 5. Step 03: Assistant Identity | 6. Step 04: Voice & Response Style |
 | :---: | :---: |
-| <img src="docs/assets/05_step03_identity.png" width="380" /> | <img src="docs/assets/06_step04_interaction.png" width="380" /> |
+| <img src="docs/assets/onboarding/05_step03_identity.png" width="380" /> | <img src="docs/assets/onboarding/06_step04_interaction.png" width="380" /> |
 
 | 7. Step 05: Privacy & Local Memory | 8. Step 06: Startup & Finish |
 | :---: | :---: |
-| <img src="docs/assets/07_step05_privacy.png" width="380" /> | <img src="docs/assets/08_step06_startup.png" width="380" /> |
+| <img src="docs/assets/onboarding/07_step05_privacy.png" width="380" /> | <img src="docs/assets/onboarding/08_step06_startup.png" width="380" /> |
 
 | 9. Liquid Collapse Sequence | 10. Restored Resting Notch |
 | :---: | :---: |
-| <img src="docs/assets/09_collapse_beginning.png" width="380" /> | <img src="docs/assets/10_notch_restored.png" width="380" /> |
+| <img src="docs/assets/onboarding/09_collapse_beginning.png" width="380" /> | <img src="docs/assets/onboarding/10_notch_restored.png" width="380" /> |
 
 </div>
 
@@ -130,6 +130,8 @@ flowchart TD
 
     Executor --> BidiSession
 ```
+
+*For comprehensive subsystem specifications and event flows, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
 
 ---
 
@@ -220,6 +222,8 @@ User preferences are persisted atomically to `%LOCALAPPDATA%\ULTRON\config\user_
 | **Sanitized Logs** | `%LOCALAPPDATA%\ULTRON\logs\` | 10MB rotating logs with real-time secret redaction |
 | **Runtime Cache** | `%LOCALAPPDATA%\ULTRON\cache\` | Temporary cache & CDP browser session profiles |
 
+*For storage schemas and security boundaries, see [docs/CONFIGURATION.md](docs/CONFIGURATION.md).*
+
 ---
 
 ## 🔬 How It Works
@@ -264,6 +268,8 @@ $$\text{Token} = \text{HMAC-SHA256}(\text{Tool} \parallel \text{Target} \paralle
 - Single-use only (burned immediately upon evaluation).
 - Replay and parameter tampering immune.
 
+*For full security disclosures, threat models, and policy invariants, see [SECURITY.md](SECURITY.md).*
+
 ---
 
 ## 🧭 Tasks & Browser Automation
@@ -296,6 +302,8 @@ python -m pytest tests/test_phase11_release_pipeline.py -v # 9 Supply Chain Secu
 python scripts/secret_scanner.py . --fail-on-findings
 ```
 
+*For complete developer setup and CLI modes, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).*
+
 ---
 
 ## 🚢 Release Engineering
@@ -322,6 +330,8 @@ Releases are triggered exclusively via version tags (`v0.1.0`):
 - Automatic generation of CycloneDX 1.4 SBOM (`sbom.json`) and SHA256 digests (`SHA256SUMS.txt`).
 - GitHub Artifact Build Provenance Attestation.
 
+*For release pipeline architecture and gate definitions, see [docs/RELEASE.md](docs/RELEASE.md).*
+
 ---
 
 ## 🔒 Security & Privacy
@@ -339,6 +349,8 @@ Contributions are welcome! Please ensure that:
 1. All changes maintain **100% pass rate** on the 265-test suite (`python -m pytest`).
 2. The automated secret scanner passes with **0 findings** (`python scripts/secret_scanner.py .`).
 3. Security invariants (3-tier safety gateway, confirmation tokens, shell blocking) are strictly preserved.
+
+*For pull request guidelines and commit standards, see [CONTRIBUTING.md](CONTRIBUTING.md).*
 
 ---
 

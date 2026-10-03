@@ -53,6 +53,9 @@ data/
 test_phase9_live_workspace/
 phase8_test/
 workspace/
+screenshots/
+dataset.csv
+*.csv
 *.db
 *.sqlite3
 *.sqlite
