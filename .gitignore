@@ -20,7 +20,8 @@ private/
 .secrets/
 user_config.json
 *.corrupt.*
-memory/
+/memory/
+!ultron/memory/
 task_journal.jsonl
 *.tmp
 *.bak
