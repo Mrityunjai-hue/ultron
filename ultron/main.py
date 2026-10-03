@@ -47,55 +47,9 @@ async def run_live_agent(no_ui: bool = False, is_startup: bool = False):
 
     lifecycle.transition_to(LifecycleState.INITIALIZING, reason="Loading configuration and runtime")
     config = get_config()
-
-    if not config.gemini_api_key:
-        print("\n=======================================================")
-        print(f"             {__product_name__} v{__version__} — FIRST-RUN SETUP             ")
-        print("=======================================================")
-        print(" GEMINI_API_KEY is required for real-time voice intelligence.")
-        print(" Free Gemini API Key available at: https://aistudio.google.com/app/apikey")
-        print("-------------------------------------------------------")
-        try:
-            if sys.stdin and sys.stdin.isatty():
-                entered_key = input(" Enter your Gemini API Key: ").strip()
-                if entered_key:
-                    from ultron.core.credentials import get_credential_manager
-                    get_credential_manager().set_api_key("GEMINI_API_KEY", entered_key)
-                    config.gemini_api_key = entered_key
-                    print("\n[OK] API key securely encrypted in Windows DPAPI store.\n")
-                else:
-                    print("\n[!] Setup incomplete: GEMINI_API_KEY is required to launch ULTRON.")
-                    print(" Please restart ULTRON and enter your API key or configure it via CLI:")
-                    print("     Ultron.exe --set-api-key <YOUR_KEY>")
-                    input("\nPress Enter to exit...")
-                    lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
-                    return
-            else:
-                print(" [!] ERROR: GEMINI_API_KEY is not configured.")
-                print(" Please set GEMINI_API_KEY in Windows DPAPI store or environment:")
-                print("     $env:GEMINI_API_KEY=\"your_api_key_here\"")
-                print("=======================================================\n")
-                lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
-                return
-        except (EOFError, KeyboardInterrupt):
-            lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
-            return
-
-    print("\n=======================================================")
-    print(f"             {__product_name__} v{__version__} — REALTIME AI AGENT             ")
-    print("=======================================================")
-    print(f" Build Date:  {__build_date__}")
-    print(f" Model:       {config.model.model} (Voice: {config.model.voice_name})")
-    print(f" Audio In:    {config.audio.input_sample_rate} Hz PCM16 Mono")
-    print(f" Audio Out:   {config.audio.output_sample_rate} Hz PCM16 Mono")
-    print(" Barge-in:    Active (Sub-50ms Playback Cancellation)")
-    print(" Safety:      4-Tier Local Tool Gateway")
-    print(" Status:      Listening. Speak naturally or press Ctrl+C to exit.")
-    print("=======================================================\n")
-
     runtime = UltronRuntime(config)
 
-    # Initialize desktop presence with failure isolation
+    # 1. Initialize desktop presence overlay FIRST so UI is immediately visible on screen!
     presence = None
     if not no_ui:
         try:
@@ -104,6 +58,51 @@ async def run_live_agent(no_ui: bool = False, is_startup: bool = False):
             presence.start()
         except Exception as e:
             logger.warning(f"Presence UI could not be started: {e}. Running in voice-only mode.")
+
+    # 2. Check for GEMINI_API_KEY
+    if not config.gemini_api_key:
+        if no_ui:
+            print("\n=======================================================")
+            print(f"             {__product_name__} v{__version__} — FIRST-RUN SETUP             ")
+            print("=======================================================")
+            print(" GEMINI_API_KEY is required for real-time voice intelligence.")
+            print(" Free Gemini API Key available at: https://aistudio.google.com/app/apikey")
+            print("-------------------------------------------------------")
+            try:
+                if sys.stdin and sys.stdin.isatty():
+                    entered_key = input(" Enter your Gemini API Key: ").strip()
+                    if entered_key:
+                        from ultron.core.credentials import get_credential_manager
+                        get_credential_manager().set_api_key("GEMINI_API_KEY", entered_key)
+                        config.gemini_api_key = entered_key
+                        print("\n[OK] API key securely encrypted in Windows DPAPI store.\n")
+                    else:
+                        print("\n[!] Setup incomplete: GEMINI_API_KEY is required to launch ULTRON.")
+                        input("\nPress Enter to exit...")
+                        lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
+                        return
+                else:
+                    lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
+                    return
+            except (EOFError, KeyboardInterrupt):
+                lifecycle.transition_to(LifecycleState.FAILED, reason="Missing GEMINI_API_KEY")
+                return
+        else:
+            print("\n=======================================================")
+            print(f"             {__product_name__} v{__version__} — DESKTOP OVERLAY ACTIVE             ")
+            print("=======================================================")
+            print(" Desktop Presence Overlay is open at the top notch of your screen.")
+            print(" Complete setup or configure your Gemini API Key to activate voice.")
+            print("=======================================================\n")
+
+    print(f" Build Date:  {__build_date__}")
+    print(f" Model:       {config.model.model} (Voice: {config.model.voice_name})")
+    print(f" Audio In:    {config.audio.input_sample_rate} Hz PCM16 Mono")
+    print(f" Audio Out:   {config.audio.output_sample_rate} Hz PCM16 Mono")
+    print(" Barge-in:    Active (Sub-50ms Playback Cancellation)")
+    print(" Safety:      4-Tier Local Tool Gateway")
+    print(" Status:      Listening. Speak naturally or press Ctrl+C to exit.")
+    print("=======================================================\n")
 
     # Graceful signal handling
     loop = asyncio.get_running_loop()
@@ -120,14 +119,28 @@ async def run_live_agent(no_ui: bool = False, is_startup: bool = False):
             pass
 
     try:
-        await runtime.start()
-        lifecycle.transition_to(LifecycleState.READY, reason="Runtime and audio started")
-        lifecycle.transition_to(LifecycleState.RUNNING, reason="Listening for user speech")
-        if is_startup:
-            startup_mgr.record_successful_startup()
+        if config.gemini_api_key:
+            await runtime.start()
+            lifecycle.transition_to(LifecycleState.READY, reason="Runtime and audio started")
+            lifecycle.transition_to(LifecycleState.RUNNING, reason="Listening for user speech")
+            if is_startup:
+                startup_mgr.record_successful_startup()
+            print("\n>>> ULTRON ONLINE: Speak into your microphone... (Press Ctrl+C to stop)\n")
+        else:
+            print("\n>>> ULTRON DESKTOP ACTIVE: Waiting for onboarding / API key configuration...\n")
 
-        print("\n>>> ULTRON ONLINE: Speak into your microphone... (Press Ctrl+C to stop)\n")
         while not stop_event.is_set():
+            if not runtime.is_running:
+                from ultron.core.credentials import get_credential_manager
+                key = config.gemini_api_key or get_credential_manager().get_api_key("GEMINI_API_KEY")
+                if key:
+                    config.gemini_api_key = key
+                    try:
+                        await runtime.start()
+                        lifecycle.transition_to(LifecycleState.RUNNING, reason="Listening for user speech")
+                        print("\n>>> ULTRON ONLINE: Connected to Gemini Live voice stream.\n")
+                    except Exception as ex:
+                        logger.error(f"[ULTRON] Error starting runtime: {ex}")
             await asyncio.sleep(0.5)
     except (KeyboardInterrupt, asyncio.CancelledError):
         pass
