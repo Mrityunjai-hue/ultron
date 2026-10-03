@@ -130,7 +130,8 @@ async def run_live_agent(no_ui: bool = False, is_startup: bool = False, force_se
             print("\n>>> ULTRON DESKTOP ACTIVE: Waiting for onboarding / API key configuration...\n")
 
         while not stop_event.is_set():
-            if not runtime.is_running:
+            is_active = getattr(runtime, "is_running", getattr(runtime, "_running", False))
+            if not is_active:
                 from ultron.core.credentials import get_credential_manager
                 key = config.gemini_api_key or get_credential_manager().get_api_key("GEMINI_API_KEY")
                 if key:
