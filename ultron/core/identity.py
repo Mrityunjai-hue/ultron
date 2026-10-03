@@ -34,11 +34,32 @@ TOOL_INTERACTION_RULES = [
 ]
 
 def build_system_instruction(
+    assistant_name: str = "ULTRON",
+    owner_name: Optional[str] = None,
+    addressing_name: Optional[str] = None,
     persistent_facts: Optional[List[str]] = None,
     recent_context_summary: Optional[str] = None,
 ) -> str:
     """Constructs the unified, single-source-of-truth system instruction for Gemini Live."""
-    parts = [SYSTEM_IDENTITY_HEADER, ""]
+    if owner_name:
+        addr = addressing_name or owner_name
+        header = (
+            f"You are {assistant_name}, a sovereign, calm, intelligent desktop AI entity assisting {owner_name} (addressed as {addr}). "
+            "You speak directly and authoritatively in natural, concise sentences."
+        )
+    else:
+        header = (
+            f"You are {assistant_name}, a sovereign, calm, intelligent desktop AI entity. "
+            "You speak directly and authoritatively in natural, concise sentences."
+        )
+
+    parts = [header, ""]
+
+    parts.append("### CRITICAL SPOKEN LANGUAGE MANDATE:")
+    parts.append(
+        "- PRIMARY LANGUAGE IS ENGLISH: You MUST speak strictly in English by default. Even if user queries mention Hindi or Indian topics (such as music, movies, or names), ALWAYS respond in English. NEVER switch to Hindi or any other language unless the user explicitly commands you in Hindi or tells you to speak in Hindi."
+    )
+    parts.append("")
 
     parts.append("### Core Conversational Principles:")
     for rule in COMMUNICATION_STYLE_RULES:

@@ -174,6 +174,7 @@ def main():
     parser.add_argument("--no-ui", action="store_true", help="Run in headless / voice-only mode without desktop presence overlay")
     parser.add_argument("--startup", action="store_true", help="Indicates launch by Windows startup")
     parser.add_argument("--set-api-key", type=str, metavar="KEY", help="Securely store Gemini API key in Windows DPAPI store")
+    parser.add_argument("--set-voice", type=str, metavar="VOICE", choices=["Puck", "Charon", "Aoede", "Fenrir", "Kore"], help="Set active Gemini Live voice (Puck, Charon, Fenrir, Aoede, Kore)")
     parser.add_argument("--setup", "--configure", action="store_true", dest="setup", help="Open configuration and onboarding dropdown UI")
     parser.add_argument("--reset-config", action="store_true", help="Reset user configuration to clean install state")
     parser.add_argument("--enable-startup", action="store_true", help="Register application in Windows startup")
@@ -208,6 +209,15 @@ def main():
         else:
             print("\n[ERROR] Failed to save credential in Windows DPAPI store.\n")
             sys.exit(1)
+
+    # 4b. Voice configuration CLI
+    if args.set_voice:
+        from ultron.core.user_config import load_user_config, save_user_config
+        cfg = load_user_config() or UserConfig()
+        cfg.voice_preference = args.set_voice
+        save_user_config(cfg)
+        print(f"\n[OK] Voice preference updated to: {args.set_voice}\n")
+        sys.exit(0)
 
     # 5. Reset Config CLI
     if args.reset_config:

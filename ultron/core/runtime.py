@@ -55,8 +55,15 @@ class UltronRuntime:
             workspace_root=self.config.workspace_root,
         )
 
-        # Inject updated identity instructions with persistent memory
-        self.config.model.system_instruction = self.memory.get_system_instruction()
+        # Inject updated identity instructions with persistent memory and user identity
+        owner = self.config.user.owner_name if self.config.user else None
+        addr = self.config.user.addressing_name if self.config.user else None
+        asst = self.config.user.assistant_name if (self.config.user and self.config.user.assistant_name) else "ULTRON"
+        self.config.model.system_instruction = self.memory.get_system_instruction(
+            assistant_name=asst,
+            owner_name=owner,
+            addressing_name=addr,
+        )
 
         # Telemetry metrics
         self.metrics = {

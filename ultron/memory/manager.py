@@ -59,11 +59,22 @@ class MemoryManager:
         """Lists all persistent memories."""
         return self.persistent.list_memories()
 
-    def get_system_instruction(self) -> str:
+    def get_system_instruction(
+        self,
+        assistant_name: str = "ULTRON",
+        owner_name: Optional[str] = None,
+        addressing_name: Optional[str] = None,
+    ) -> str:
         """Builds active system instruction with injected persistent facts and context."""
         facts = self.persistent.get_all_facts()
         context = self.session.get_context_summary()
-        return build_system_instruction(persistent_facts=facts, recent_context_summary=context)
+        return build_system_instruction(
+            assistant_name=assistant_name,
+            owner_name=owner_name,
+            addressing_name=addressing_name,
+            persistent_facts=facts,
+            recent_context_summary=context,
+        )
 
     def clear_session(self):
         """Clears ephemeral session state."""

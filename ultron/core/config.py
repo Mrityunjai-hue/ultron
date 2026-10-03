@@ -89,6 +89,9 @@ class ModelConfig:
     )
 
 
+from ultron.core.identity import build_system_instruction
+
+
 @dataclass
 class UltronConfig:
     audio: AudioConfig = field(default_factory=AudioConfig)
@@ -106,20 +109,21 @@ class UltronConfig:
         if self.user is None:
             self.user = load_user_config()
 
-        if self.user and self.user.first_run_completed:
-            if self.user.voice_preference:
-                self.model.voice_name = self.user.voice_preference
-            assistant_name = self.user.assistant_name or "ULTRON"
-            owner_name = self.user.owner_name or "User"
-            addressing = self.user.addressing_name or owner_name
-            self.model.system_instruction = (
-                f"You are {assistant_name}, a sovereign, concise, calculating AI entity assisting {owner_name} (addressed as {addressing}). "
-                "Speak naturally in short, authoritative sentences. "
-                "Never use markdown, lists, or conversational filler. "
-                "Use provided tools whenever system status, time, files, or applications are requested."
-            )
+        assistant_name = self.user.assistant_name if (self.user and self.user.assistant_name) else "ULTRON"
+        owner_name = self.user.owner_name if (self.user and self.user.owner_name) else None
+        addressing = self.user.addressing_name if (self.user and self.user.addressing_name) else owner_name
+
+        if self.user and self.user.first_run_completed and self.user.voice_preference:
+            self.model.voice_name = self.user.voice_preference
+
+        self.model.system_instruction = build_system_instruction(
+            assistant_name=assistant_name,
+            owner_name=owner_name,
+            addressing_name=addressing,
+        )
 
 
 def get_config() -> UltronConfig:
     """Returns singleton-like active configuration instance."""
     return UltronConfig()
+
