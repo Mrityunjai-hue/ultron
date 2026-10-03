@@ -1,0 +1,96 @@
+"""
+ULTRON — Core Configuration
+─────────────────────────────────────────────────────────────────────────────
+Handles environment loading, credential resolution, audio parameters,
+and model settings with clean production filesystem separation.
+─────────────────────────────────────────────────────────────────────────────
+"""
+from __future__ import annotations
+import os
+import sys
+from pathlib import Path
+from dataclasses import dataclass, field
+
+from ultron.core.paths import get_user_data_dir, get_app_install_dir
+from ultron.core.credentials import get_credential_manager
+from ultron.core.user_config import UserConfig, load_user_config
+
+
+def load_dotenv_fallback():
+    """Loads .env file only when running in non-frozen development mode."""
+    if getattr(sys, "frozen", False):
+        return
+    env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+    if env_path.exists():
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip('"').strip("'")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+        except Exception:
+            pass
+
+load_dotenv_fallback()
+
+
+@dataclass
+class AudioConfig:
+    input_sample_rate: int = 16000        # 16 kHz PCM16 for Gemini Live input
+    output_sample_rate: int = 24000       # 24 kHz PCM16 for Gemini Live output
+    channels: int = 1
+    chunk_size: int = 512                 # 32ms frames @ 16kHz
+    barge_in_rms_threshold: float = 0.035 # Minimum RMS to trigger local barge-in
+    barge_in_consecutive_frames: int = 2  # Debounce false positives
+
+
+@dataclass
+class ModelConfig:
+    model: str = "gemini-2.5-flash-native-audio-latest"  # Primary Gemini Live bidiGenerateContent model
+    voice_name: str = "Puck"                             # Options: Aoede, Charon, Fenrir, Kore, Puck
+    system_instruction: str = (
+        "You are ULTRON, a sovereign, concise, calculating AI entity. "
+        "Speak naturally in short, authoritative sentences. "
+        "Never use markdown, lists, or conversational filler. "
+        "Use provided tools whenever system status, time, files, or applications are requested."
+    )
+
+
+@dataclass
+class UltronConfig:
+    audio: AudioConfig = field(default_factory=AudioConfig)
+    model: ModelConfig = field(default_factory=ModelConfig)
+    gemini_api_key: str = ""
+    workspace_root: Path = field(default_factory=get_user_data_dir)
+    install_root: Path = field(default_factory=get_app_install_dir)
+    user: Optional[UserConfig] = None
+
+    def __post_init__(self):
+        if not self.gemini_api_key:
+            cred_mgr = get_credential_manager()
+            self.gemini_api_key = cred_mgr.get_api_key("GEMINI_API_KEY") or ""
+
+        if self.user is None:
+            self.user = load_user_config()
+
+        if self.user and self.user.first_run_completed:
+            if self.user.voice_preference:
+                self.model.voice_name = self.user.voice_preference
+            assistant_name = self.user.assistant_name or "ULTRON"
+            owner_name = self.user.owner_name or "User"
+            addressing = self.user.addressing_name or owner_name
+            self.model.system_instruction = (
+                f"You are {assistant_name}, a sovereign, concise, calculating AI entity assisting {owner_name} (addressed as {addressing}). "
+                "Speak naturally in short, authoritative sentences. "
+                "Never use markdown, lists, or conversational filler. "
+                "Use provided tools whenever system status, time, files, or applications are requested."
+            )
+
+
+def get_config() -> UltronConfig:
+    """Returns singleton-like active configuration instance."""
+    return UltronConfig()

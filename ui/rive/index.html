@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ULTRON Presence — Rive Character System</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #presence-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    canvas#rive-canvas {
+      width: 100%;
+      height: 100%;
+      max-width: 640px;
+      max-height: 420px;
+      object-fit: contain;
+    }
+    #status-overlay {
+      position: absolute;
+      bottom: 8px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: rgba(10, 12, 16, 0.75);
+      backdrop-filter: blur(12px);
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #8E929B;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: opacity 0.3s;
+      opacity: 0.85;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #E50914;
+      box-shadow: 0 0 6px #E50914;
+    }
+    .status-dot.offline {
+      background: #555A64;
+      box-shadow: none;
+    }
+    .status-dot.warning {
+      background: #FFA000;
+      box-shadow: 0 0 6px #FFA000;
+    }
+  </style>
+  <script src="https://unpkg.com/@rive-app/canvas@2.9.1"></script>
+</head>
+<body>
+  <div id="presence-container">
+    <canvas id="rive-canvas" width="1024" height="1024"></canvas>
+    <div id="status-overlay">
+      <span class="status-dot" id="socket-dot"></span>
+      <span id="state-text">IDLE</span>
+      <span id="operation-text" style="color: #E50914; display: none;"></span>
+    </div>
+  </div>
+
+  <script src="rive-client.js"></script>
+</body>
+</html>

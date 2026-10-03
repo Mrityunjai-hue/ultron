@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ultron"
+version = "0.1.0"
+description = "Sovereign Realtime Multimodal AI Desktop Assistant for Windows"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Proprietary / Commercial"}
+authors = [
+    {name = "ULTRON Systems"}
+]
+dependencies = [
+    "google-genai>=0.1.1",
+    "sounddevice>=0.4.6",
+    "numpy>=1.24.0",
+    "pillow>=9.5.0",
+    "pywin32>=306; sys_platform == 'win32'",
+    "psutil>=5.9.0",
+    "requests>=2.31.0",
+    "websockets>=12.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "anyio>=4.0.0",
+    "pyinstaller>=6.0.0",
+]
+
+[project.scripts]
+ultron = "ultron.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ultron*"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]

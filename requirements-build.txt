@@ -1,0 +1,7 @@
+# ULTRON — Packaging and CI/CD Build Dependencies
+-r requirements.txt
+pytest==9.1.1
+anyio==4.12.1
+pyinstaller>=6.4.0
+wheel>=0.42.0
+setuptools>=68.0.0

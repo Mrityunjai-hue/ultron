@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ULTRON v2.0 — Animation Lab & Character Gallery</title>
+  <link rel="stylesheet" href="/presence/presence.css">
+  <link rel="stylesheet" href="lab.css">
+</head>
+<body>
+  <!-- Stage containing the exact production character -->
+  <div id="lab-stage-container">
+    <div id="presence-stage"></div>
+  </div>
+
+  <!-- Developer Controls Panel -->
+  <div id="lab-controls-panel">
+    <div class="lab-header">
+      <h1>ULTRON Character Lab</h1>
+      <p>Developer State Gallery & Optical Telemetry</p>
+    </div>
+
+    <!-- 1. Canonical Activity State -->
+    <div class="control-section">
+      <div class="section-label">Canonical ActivityState</div>
+      <div class="btn-grid" id="activity-buttons">
+        <button class="lab-btn" data-act="IDLE">IDLE</button>
+        <button class="lab-btn" data-act="LISTENING">LISTENING</button>
+        <button class="lab-btn active" data-act="THINKING">THINKING</button>
+        <button class="lab-btn" data-act="EXECUTING">EXECUTING</button>
+        <button class="lab-btn" data-act="RESPONDING">RESPONDING</button>
+        <button class="lab-btn" data-act="ERROR">ERROR</button>
+        <button class="lab-btn" data-act="OFFLINE">OFFLINE</button>
+        <button class="lab-btn" data-act="RECONNECTING">RECONNECT</button>
+      </div>
+    </div>
+
+    <!-- 2. Active Operation -->
+    <div class="control-section">
+      <div class="section-label">Operation Metadata</div>
+      <div class="btn-grid" id="operation-buttons">
+        <button class="lab-btn active" data-op="none">NONE</button>
+        <button class="lab-btn" data-op="search_files">SEARCH</button>
+        <button class="lab-btn" data-op="read_file">READ</button>
+        <button class="lab-btn" data-op="write_file">WRITE</button>
+        <button class="lab-btn" data-op="open_app">APP</button>
+        <button class="lab-btn" data-op="shell">SHELL</button>
+      </div>
+    </div>
+
+    <!-- 3. Mood State -->
+    <div class="control-section">
+      <div class="section-label">Orthogonal MoodState</div>
+      <div class="btn-grid" id="mood-buttons">
+        <button class="lab-btn active" data-mood="CALM">CALM</button>
+        <button class="lab-btn" data-mood="ATTENTIVE">ATTENTIVE</button>
+        <button class="lab-btn" data-mood="FOCUSED">FOCUSED</button>
+        <button class="lab-btn" data-mood="CURIOUS">CURIOUS</button>
+        <button class="lab-btn" data-mood="CONCERNED">CONCERNED</button>
+        <button class="lab-btn" data-mood="WARNING">WARNING</button>
+      </div>
+    </div>
+
+    <!-- 4. Gaze 2D Joystick -->
+    <div class="control-section">
+      <div class="section-label">Gaze Vector (Drag Joystick)</div>
+      <div id="gaze-joystick-box">
+        <div id="joystick-puck"></div>
+      </div>
+      <div style="display: flex; justify-content: space-around; font-size: 11px; color: var(--text-muted);">
+        <span id="gaze-x-label">gazeX: 0.00</span>
+        <span id="gaze-y-label">gazeY: 0.00</span>
+      </div>
+    </div>
+
+    <!-- 5. Voice Amplitude -->
+    <div class="control-section">
+      <div class="section-label">ElevenLabs Voice RMS Amplitude</div>
+      <div class="slider-group">
+        <input type="range" id="amp-slider" min="0" max="1" step="0.01" value="0">
+        <span id="amp-label">0.00</span>
+      </div>
+      <button class="lab-btn" id="btn-pulse-audio">Pulse Simulated Audio</button>
+    </div>
+
+    <!-- 6. Action Triggers -->
+    <div class="control-section">
+      <div class="section-label">Action Triggers</div>
+      <div class="btn-grid">
+        <button class="lab-btn" id="btn-trigger-blink">Trigger Blink</button>
+        <button class="lab-btn" id="btn-trigger-success">Trigger Success</button>
+        <button class="lab-btn" id="btn-trigger-error">Trigger Error</button>
+      </div>
+    </div>
+
+    <!-- 7. Telemetry -->
+    <div class="control-section">
+      <div class="section-label">Live Telemetry</div>
+      <pre id="telemetry-display">{}</pre>
+    </div>
+  </div>
+
+  <!-- Shared Production Character Scripts -->
+  <script src="/presence/svg-character.js"></script>
+  <script src="/presence/waveform.js"></script>
+  <script src="/presence/gaze.js"></script>
+  <script src="/presence/blink.js"></script>
+  <script src="/presence/audio-reactivity.js"></script>
+  <script src="/presence/state-controller.js"></script>
+  <script src="/presence/presence.js"></script>
+
+  <!-- Lab Controller -->
+  <script src="lab.js"></script>
+</body>
+</html>

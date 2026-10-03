@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ULTRON v2.0</title>
+  <meta name="description" content="ULTRON v2.0 — The Living Signal" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Screen-Reader Accessibility Status -->
+  <div id="aria-status" class="sr-only" aria-live="polite">ULTRON Ready.</div>
+
+  <!-- Fullscreen Living Canvas -->
+  <main id="app-container" class="app-container" role="main">
+    <canvas id="ultron-canvas" class="fullscreen-canvas"></canvas>
+  </main>
+
+  <!-- Faint Minimal State Toast (Fades out automatically in 1.8s) -->
+  <div id="state-toast" class="state-toast" aria-hidden="true"></div>
+
+  <!-- ── Developer-Only Voice Lab (Toggle with 'V' or '~') ─────────────────── -->
+  <div id="voice-lab-modal" class="voice-lab-overlay hidden" role="dialog" aria-label="ULTRON Voice Lab">
+    <div class="voice-lab-panel">
+      <!-- Header -->
+      <div class="lab-header">
+        <div class="lab-brand">
+          <span class="lab-badge-live">● LIVE</span>
+          <span class="lab-title">ULTRON VOICE LAB</span>
+          <span class="lab-voice-id">ID: 5vpfPL62TWuqhC30bkVm</span>
+        </div>
+        <button class="lab-close" id="btn-close-voice-lab" title="Close (V or Esc)">✕</button>
+      </div>
+
+      <!-- Real-Time Telemetry Bar -->
+      <div class="lab-telemetry">
+        <div class="telem-item">
+          <span class="telem-label">VOICE STATE</span>
+          <span class="telem-val state-idle" id="lab-voice-state">IDLE</span>
+        </div>
+        <div class="telem-item">
+          <span class="telem-label">SERVER TTS</span>
+          <span class="telem-val" id="lab-server-status">CONNECTING...</span>
+        </div>
+        <div class="telem-item telem-vu">
+          <span class="telem-label">RMS AMPLITUDE</span>
+          <div class="vu-track">
+            <div class="vu-bar" id="lab-vu-bar"></div>
+          </div>
+          <span class="vu-num" id="lab-vu-val">0.00</span>
+        </div>
+      </div>
+
+      <!-- 8 Canonical Test Phrases -->
+      <div class="lab-section">
+        <div class="section-title">CANONICAL VOICE TESTS</div>
+        <div class="phrase-grid">
+          <button class="btn-phrase" data-phrase="I am online.">"I am online."</button>
+          <button class="btn-phrase" data-phrase="I'm listening.">"I'm listening."</button>
+          <button class="btn-phrase" data-phrase="Give me a moment to process that.">"Give me a moment to process that."</button>
+          <button class="btn-phrase" data-phrase="Processing your request.">"Processing your request."</button>
+          <button class="btn-phrase" data-phrase="Analysis complete.">"Analysis complete."</button>
+          <button class="btn-phrase" data-phrase="That action requires your attention.">"That action requires your attention."</button>
+          <button class="btn-phrase" data-phrase="I encountered an error while processing your request.">"I encountered an error while processing your request."</button>
+          <button class="btn-phrase" data-phrase="Attention. An immediate response is required.">"Attention. An immediate response is required."</button>
+        </div>
+      </div>
+
+      <!-- Interactive Controls: Custom Stream, Queue & Interruption -->
+      <div class="lab-section">
+        <div class="section-title">CUSTOM STREAM & QUEUE CONTROLS</div>
+        <div class="lab-input-row">
+          <input type="text" id="lab-custom-input" class="lab-text-input" placeholder="Type custom statement to stream..." value="Directive acknowledged. All neural signals are locked in." />
+          <button class="btn-action btn-speak" id="btn-lab-speak">STREAM SPEAK</button>
+        </div>
+        <div class="lab-btn-row">
+          <button class="btn-action btn-secondary" id="btn-lab-queue">QUEUE 3 UTTERANCES</button>
+          <button class="btn-action btn-interrupt" id="btn-lab-interrupt">INTERRUPT SPEECH</button>
+          <button class="btn-action btn-secondary" id="btn-lab-cancel">CANCEL / FLUSH</button>
+        </div>
+      </div>
+
+      <!-- Server-Side Security & Key Configuration -->
+      <div class="lab-section lab-section-security">
+        <div class="section-title">SERVER-SIDE API CONFIGURATION (ZERO CLIENT LEAKAGE)</div>
+        <div class="security-desc">
+          The ElevenLabs API Key is stored and processed strictly on the backend server. It is never exposed in client bundles or network responses.
+        </div>
+        <div class="lab-input-row">
+          <input type="password" id="lab-api-key" class="lab-text-input" placeholder="Enter ElevenLabs API Key (saves server-side)..." />
+          <button class="btn-action btn-secondary" id="btn-lab-save-key">SAVE TO SERVER</button>
+        </div>
+        <div class="key-status-msg" id="lab-key-status"></div>
+      </div>
+
+      <div class="lab-footer">
+        <span>Press <kbd>V</kbd> or <kbd>~</kbd> to toggle Voice Lab • <kbd>Space</kbd> to converse • <kbd>1-9</kbd> for emotional states</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core Scripts -->
+  <script src="animation/ultron-signal-character.js"></script>
+  <script src="audio/voice-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

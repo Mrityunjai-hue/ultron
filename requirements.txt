@@ -1,0 +1,11 @@
+# ULTRON — Production Runtime Dependencies
+google-genai==2.28.0
+sounddevice==0.5.6
+numpy==2.4.2
+pillow==12.1.0
+pywin32==312
+psutil==7.2.2
+requests==2.32.5
+websockets==16.0
+pydantic==2.12.5
+python-dotenv==1.2.2

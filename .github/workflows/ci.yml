@@ -1,0 +1,51 @@
+name: ULTRON CI — Quality, Security & Productization Regression
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# Least-privilege global permissions
+permissions:
+  contents: read
+
+jobs:
+  test_and_verify:
+    name: Regression & Security Audit (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Repository (Exact Commit)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python Runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Pinned Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-build.txt
+
+      - name: Step 1 — Automated Secret Discovery Scan
+        run: |
+          python scripts/secret_scanner.py . --fail-on-findings
+
+      - name: Step 2 — Run Complete Test Suite (Phases 5–11)
+        run: |
+          python -m pytest tests -v --durations=10
+
+      - name: Step 3 — Standalone Windows Distribution Build & Artifact Scan
+        run: |
+          python scripts/build_windows_dist.py
+
+      - name: Step 4 — Verify Checksums & SBOM Integrity
+        run: |
+          Get-FileHash -Algorithm SHA256 dist/Ultron-*.zip
+          python -c "import json, pathlib; data = json.loads(pathlib.Path('dist/sbom.json').read_text()); assert data['metadata']['component']['name'] == 'ULTRON'"

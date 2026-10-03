@@ -1,0 +1,102 @@
+/* ULTRON v2.0 — Production Living Desktop Notch Stylesheet */
+:root {
+  --bg-color: #000000;
+  --glow-purple: #7B2CFF;
+  --bright-purple: #B96CFF;
+  --lavender: #E0AAFF;
+  --white: #FFFFFF;
+  --notch-radius-compact: 18px;
+  --notch-radius-expanded: 28px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+}
+
+#presence-stage {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #000000;
+  border-bottom-left-radius: var(--notch-radius-expanded);
+  border-bottom-right-radius: var(--notch-radius-expanded);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-radius 0.28s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(123, 44, 255, 0.08);
+}
+
+/* Subtle atmosphere background glow */
+#presence-stage::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 30%, rgba(123, 44, 255, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#presence-stage:hover::before {
+  background: radial-gradient(circle at 50% 30%, rgba(123, 44, 255, 0.14) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+#ultron-svg {
+  width: 100%;
+  height: 100%;
+  max-width: 640px;
+  max-height: 420px;
+  display: block;
+  filter: drop-shadow(0 0 24px rgba(123, 44, 255, 0.18));
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+}
+
+/* ── Compact Notch Mode ─────────────────────────────────────────────────── */
+body.compact-mode #presence-stage {
+  border-bottom-left-radius: var(--notch-radius-compact);
+  border-bottom-right-radius: var(--notch-radius-compact);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 16px rgba(123, 44, 255, 0.06);
+}
+
+body.compact-mode #ultron-svg {
+  max-width: 320px;
+  max-height: 48px;
+  transform: scale(0.92);
+}
+
+body.compact-mode #status-pill-group {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+body.compact-mode #left-brow,
+body.compact-mode #right-brow {
+  stroke-width: 2.0px;
+}
+
+/* ── Subtle Active & Micro-Interactions ─────────────────────────────────── */
+#presence-stage:active #ultron-svg {
+  transform: scale(0.98);
+}

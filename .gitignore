@@ -1,0 +1,90 @@
+# ==============================================================================
+# ULTRON — SECURE .GITIGNORE
+# Phase 11 Hardened Exclusion Rules for Production & Release Engineering
+# ==============================================================================
+
+# Secrets, Credentials, & Private Configuration
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.csr
+secrets/
+credentials/
+credentials.enc
+local_config/
+private/
+.secrets/
+user_config.json
+*.corrupt.*
+memory/
+task_journal.jsonl
+*.tmp
+*.bak
+
+# Python Runtimes, Caches, & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# ULTRON Mutable Runtime State & User Data (Local Machine Only)
+data/
+.ultron_tasks/
+.chrome_profile/
+test_phase9_live_workspace/
+phase8_test/
+workspace/
+*.db
+*.sqlite3
+*.sqlite
+*.journal
+*.evidence
+*.checkpoint
+
+# Application Logs & Diagnostics
+logs/
+*.log
+*.log.*
+
+# Build, Packaging, & Release Outputs
+build/
+dist/
+*.egg-info/
+*.egg
+packaging/dist/
+packaging/build/
+*.exe
+*.msi
+*.msix
+*.iss.bak
+
+# IDE, OS, & Developer-Specific Artifacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.agents/
+.claude/

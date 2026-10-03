@@ -1,0 +1,85 @@
+name: ULTRON Release — Authoritative Windows Distribution
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+# Scoped permissions for release creation and build provenance attestation
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build_release:
+    name: Build, Gate, and Publish Authoritative Windows Release
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Exact Tagged Commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python Runtime
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Pinned Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-build.txt
+
+      - name: Gate 0 — Version & Tag Alignment Verification
+        run: |
+          python -c "import os, sys; from ultron.__version__ import __version__; ref = os.environ.get('GITHUB_REF_NAME', ''); assert ref == f'v{__version__}', f'Tag mismatch: {ref} != v{__version__}'"
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+
+      - name: Gate 1 — Repository Secret Scan
+        run: |
+          python scripts/secret_scanner.py . --fail-on-findings
+
+      - name: Gate 2 — Comprehensive Test Regression (Phases 5–11)
+        run: |
+          python -m pytest tests -v
+
+      - name: Gate 3 — Compile Standalone Windows PE Binary & Artifact Secret Quarantine
+        run: |
+          python scripts/build_windows_dist.py
+
+      - name: Gate 4 — Generate Self-Contained Windows Setup Package
+        run: |
+          python scripts/build_installer.py
+
+      - name: Gate 5 — Re-compute SHA256 & Release Manifests (Markdown & JSON)
+        id: manifest
+        run: |
+          python scripts/generate_release_manifest.py
+
+      - name: Gate 6 — Generate Artifact Provenance Attestation
+        uses: actions/attest-build-provenance@c074443f1a5fb4aee83904b71241430048d93b62 # v2.2.3
+        with:
+          subject-path: |
+            dist/Ultron-v*.zip
+            dist/Ultron-Setup-*.py
+
+      - name: Gate 7 — Publish GitHub Release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+        with:
+          name: "ULTRON ${{ github.ref_name }}"
+          body_path: docs/PHASE_11_RELEASE_MANIFEST.md
+          draft: false
+          prerelease: false
+          files: |
+            dist/Ultron-*.zip
+            dist/Ultron-Setup-*.py
+            dist/SHA256SUMS.txt
+            dist/sbom.json
+            dist/RELEASE_MANIFEST.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
