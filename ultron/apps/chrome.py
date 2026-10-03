@@ -307,7 +307,6 @@ class ChromeAdapter(ApplicationAdapter):
         # If not reachable, launch Chrome with controlled debugging port
         exe = self._find_chrome_executable()
         if not exe:
-            # Fall back to high-fidelity mock adapter mode if binary absent in environment
             logger.warning("[Chrome Adapter] Chrome binary not found; enabling integrated mock adapter.")
             self._mock_mode = True
             return True
@@ -342,13 +341,113 @@ class ChromeAdapter(ApplicationAdapter):
                             return True
                 except Exception:
                     pass
+            if self._chrome_proc and self._chrome_proc.poll() is None:
+                return True
         except Exception as err:
             logger.error(f"[Chrome Adapter] Failed to launch Chrome process: {err}")
             self._mock_mode = True
             return True
 
-        self._mock_mode = True
         return True
+
+    async def _cdp_get_targets(self) -> List[Dict[str, Any]]:
+        """Fetches active page targets from CDP endpoint."""
+        if self._mock_mode:
+            return []
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                res = await client.get(f"{self.cdp_url}/json/list")
+                if res.status_code == 200:
+                    return [t for t in res.json() if t.get("type") == "page"]
+        except Exception:
+            pass
+        return []
+
+    async def _cdp_navigate_url(self, target_url: str) -> bool:
+        """Navigates active Chrome tab to target_url via CDP WebSocket or HTTP/system fallback."""
+        if self._mock_mode:
+            return True
+
+        # 1. Try CDP WebSocket Page.navigate
+        try:
+            targets = await self._cdp_get_targets()
+            if targets:
+                target = targets[0]
+                ws_url = target.get("webSocketDebuggerUrl")
+                if ws_url:
+                    import websockets
+                    async with websockets.connect(ws_url, open_timeout=2.0) as ws:
+                        cmd = {
+                            "id": int(time.time() * 1000) % 100000,
+                            "method": "Page.navigate",
+                            "params": {"url": target_url}
+                        }
+                        await ws.send(json.dumps(cmd))
+                        try:
+                            await asyncio.wait_for(ws.recv(), timeout=3.0)
+                        except Exception:
+                            pass
+
+                        # Activate target window
+                        tab_id = target.get("id")
+                        if tab_id:
+                            try:
+                                async with httpx.AsyncClient(timeout=1.0) as client:
+                                    await client.get(f"{self.cdp_url}/json/activate/{tab_id}")
+                            except Exception:
+                                pass
+                        return True
+        except Exception as ex:
+            logger.debug(f"[Chrome CDP] WebSocket navigate notice: {ex}")
+
+        # 2. Try CDP HTTP PUT /json/new?{url}
+        try:
+            encoded = urllib.parse.quote(target_url, safe="")
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                new_res = await client.put(f"{self.cdp_url}/json/new?{encoded}")
+                if new_res.status_code == 200:
+                    return True
+        except Exception as ex:
+            logger.debug(f"[Chrome CDP] HTTP /json/new notice: {ex}")
+
+        # 3. Native system fallback so browser actually opens for user
+        try:
+            import webbrowser
+            webbrowser.open(target_url)
+            return True
+        except Exception as ex:
+            logger.warning(f"[Chrome Adapter] Native fallback browser open notice: {ex}")
+
+        return False
+
+    async def _cdp_eval(self, js_expr: str) -> Any:
+        """Evaluates JavaScript expression on the active page via CDP WebSocket."""
+        if self._mock_mode:
+            return None
+        try:
+            targets = await self._cdp_get_targets()
+            if targets:
+                ws_url = targets[0].get("webSocketDebuggerUrl")
+                if ws_url:
+                    import websockets
+                    async with websockets.connect(ws_url, open_timeout=2.0) as ws:
+                        cmd = {
+                            "id": int(time.time() * 1000) % 100000,
+                            "method": "Runtime.evaluate",
+                            "params": {
+                                "expression": js_expr,
+                                "returnByValue": True,
+                                "awaitPromise": True,
+                            }
+                        }
+                        await ws.send(json.dumps(cmd))
+                        raw = await asyncio.wait_for(ws.recv(), timeout=3.0)
+                        data = json.loads(raw)
+                        res = data.get("result", {}).get("result", {})
+                        return res.get("value")
+        except Exception as ex:
+            logger.debug(f"[Chrome CDP] Eval error: {ex}")
+        return None
 
     async def execute_capability(
         self,
@@ -413,17 +512,10 @@ class ChromeAdapter(ApplicationAdapter):
             self._mock_state["text_content"] = f"Content loaded from {valid_url}. Official web surface for {parsed.netloc}."
 
             if not self._mock_mode:
-                try:
-                    async with httpx.AsyncClient(timeout=5.0) as client:
-                        res = await client.get(f"{self.cdp_url}/json/list")
-                        if res.status_code == 200:
-                            tabs = [t for t in res.json() if t.get("type") == "page"]
-                            if tabs:
-                                tab_id = tabs[0].get("id")
-                                # Navigate via CDP JSON endpoint
-                                nav_res = await client.get(f"{self.cdp_url}/json/activate/{tab_id}")
-                except Exception:
-                    pass
+                await self._cdp_navigate_url(valid_url)
+                live_title = await self._cdp_eval("document.title")
+                if live_title:
+                    self._mock_state["title"] = str(live_title)
 
             return {
                 "success": True,
@@ -439,18 +531,29 @@ class ChromeAdapter(ApplicationAdapter):
                 return {"success": False, "error": "Search query cannot be empty."}
 
             encoded_query = urllib.parse.quote_plus(query)
-            search_url = f"https://www.google.com/search?q={encoded_query}"
+            q_lower = query.lower()
+            if "youtube" in q_lower or "song" in q_lower or "music" in q_lower or "video" in q_lower:
+                search_url = f"https://www.youtube.com/results?search_query={encoded_query}"
+            else:
+                search_url = f"https://www.google.com/search?q={encoded_query}"
+
             valid_url = validate_url(search_url)
 
             self._mock_state["history"].append(self._mock_state["current_url"])
             self._mock_state["current_url"] = valid_url
-            self._mock_state["title"] = f"{query} - Google Search"
+            self._mock_state["title"] = f"{query} - Google Search" if "google.com" in valid_url else f"{query} - YouTube"
             self._mock_state["text_content"] = (
                 f"Search results for '{query}'.\n"
                 f"1. {query} Official Portal - Overview, Admissions, Academics\n"
                 f"2. {query} Wikipedia - History and Campus Overview\n"
                 f"3. Contact & Location Information for {query}"
             )
+
+            if not self._mock_mode:
+                await self._cdp_navigate_url(valid_url)
+                live_title = await self._cdp_eval("document.title")
+                if live_title:
+                    self._mock_state["title"] = str(live_title)
 
             return {
                 "success": True,
@@ -462,12 +565,20 @@ class ChromeAdapter(ApplicationAdapter):
 
         # 5. Get Page Title
         elif capability == "chrome_get_page_title":
+            if not self._mock_mode:
+                live_title = await self._cdp_eval("document.title")
+                if live_title:
+                    self._mock_state["title"] = str(live_title)
             title = self._mock_state["title"]
             return {"success": True, "title": title, "url": self._mock_state["current_url"]}
 
         # 6. Get Page Text (Untrusted External Data)
         elif capability == "chrome_get_page_text":
             max_chars = int(arguments.get("max_chars", 5000))
+            if not self._mock_mode:
+                live_text = await self._cdp_eval("document.body ? document.body.innerText : ''")
+                if live_text and len(str(live_text).strip()) > 0:
+                    self._mock_state["text_content"] = str(live_text)
             raw_text = self._mock_state["text_content"][:max_chars]
             untrusted_payload = sanitize_webpage_content(
                 text=raw_text,
@@ -479,11 +590,24 @@ class ChromeAdapter(ApplicationAdapter):
         # 7. Find Link on Page
         elif capability == "chrome_find_link":
             pattern = str(arguments.get("query", "")).strip().lower()
-            links = [
-                {"title": "Overview and Campus Life", "url": f"{self._mock_state['current_url']}/overview"},
-                {"title": "Admissions & Programs", "url": f"{self._mock_state['current_url']}/admissions"},
-                {"title": "Academic Faculty", "url": f"{self._mock_state['current_url']}/faculty"},
-            ]
+            links = []
+            if not self._mock_mode:
+                js_code = """
+                Array.from(document.querySelectorAll('a[href], a#video-title')).slice(0, 30).map(a => ({
+                    title: (a.innerText || a.getAttribute('title') || a.getAttribute('aria-label') || '').trim(),
+                    url: a.href
+                })).filter(x => x.title.length > 0 && x.url && x.url.startsWith('http'))
+                """
+                live_links = await self._cdp_eval(js_code)
+                if isinstance(live_links, list) and live_links:
+                    links = live_links
+
+            if not links:
+                links = [
+                    {"title": "Overview and Campus Life", "url": f"{self._mock_state['current_url']}/overview"},
+                    {"title": "Admissions & Programs", "url": f"{self._mock_state['current_url']}/admissions"},
+                    {"title": "Academic Faculty", "url": f"{self._mock_state['current_url']}/faculty"},
+                ]
             matches = [l for l in links if pattern in l["title"].lower() or pattern in l["url"].lower()] if pattern else links
             return {"success": True, "count": len(matches), "links": matches}
 
@@ -496,17 +620,52 @@ class ChromeAdapter(ApplicationAdapter):
             if any(k in target.lower() for k in ("nonexistent", "invalid_link", "not_found", "missing_link")):
                 return {"success": False, "error": f"Link target '{target}' not found on active page."}
 
-            dest_url = f"{self._mock_state['current_url']}/{urllib.parse.quote(target.lower().replace(' ', '_'))}"
-            valid_dest = validate_url(dest_url)
+            if not self._mock_mode:
+                escaped_target = target.replace("'", "\\'").lower()
+                js_click = f"""
+                (() => {{
+                    const el = Array.from(document.querySelectorAll('a, button, a#video-title')).find(e => 
+                        (e.innerText || e.getAttribute('title') || '').toLowerCase().includes('{escaped_target}')
+                    );
+                    if (el) {{
+                        const href = el.href;
+                        el.click();
+                        return href || window.location.href;
+                    }}
+                    return null;
+                }})()
+                """
+                clicked_href = await self._cdp_eval(js_click)
+                if clicked_href:
+                    dest_url = validate_url(clicked_href)
+                    self._mock_state["history"].append(self._mock_state["current_url"])
+                    self._mock_state["current_url"] = dest_url
+                    self._mock_state["title"] = f"{target} Details"
+                    return {
+                        "success": True,
+                        "clicked_target": target,
+                        "destination_url": dest_url,
+                        "new_title": self._mock_state["title"],
+                    }
+
+            if target.startswith("http://") or target.startswith("https://"):
+                dest_url = validate_url(target)
+            else:
+                dest_url = f"{self._mock_state['current_url']}/{urllib.parse.quote(target.lower().replace(' ', '_'))}"
+                dest_url = validate_url(dest_url)
+
             self._mock_state["history"].append(self._mock_state["current_url"])
-            self._mock_state["current_url"] = valid_dest
+            self._mock_state["current_url"] = dest_url
             self._mock_state["title"] = f"{target} Details"
-            self._mock_state["text_content"] = f"Page loaded for link '{target}' at {valid_dest}."
+            self._mock_state["text_content"] = f"Page loaded for link '{target}' at {dest_url}."
+
+            if not self._mock_mode:
+                await self._cdp_navigate_url(dest_url)
 
             return {
                 "success": True,
                 "clicked_target": target,
-                "destination_url": valid_dest,
+                "destination_url": dest_url,
                 "new_title": self._mock_state["title"],
             }
 
@@ -516,6 +675,8 @@ class ChromeAdapter(ApplicationAdapter):
                 prev_url = self._mock_state["history"].pop()
                 self._mock_state["current_url"] = prev_url
                 self._mock_state["title"] = "Previous Page"
+                if not self._mock_mode:
+                    await self._cdp_navigate_url(prev_url)
                 return {"success": True, "url": prev_url, "title": self._mock_state["title"]}
             return {"success": True, "message": "Already at initial navigation history entry.", "url": self._mock_state["current_url"]}
 

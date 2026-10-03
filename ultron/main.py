@@ -34,7 +34,7 @@ from ultron.benchmark import run_performance_benchmark
 logger = logging.getLogger("ultron.main")
 
 
-async def run_live_agent(no_ui: bool = False, is_startup: bool = False):
+async def run_live_agent(no_ui: bool = False, is_startup: bool = False, force_setup: bool = False):
     """Runs interactive live microphone session."""
     ensure_runtime_directories()
     lifecycle = LifecycleManager(LifecycleState.STARTING)
@@ -55,7 +55,7 @@ async def run_live_agent(no_ui: bool = False, is_startup: bool = False):
         try:
             from ultron.presence.manager import PresenceManager
             presence = PresenceManager(runtime)
-            presence.start()
+            presence.start(force_onboarding=force_setup)
         except Exception as e:
             logger.warning(f"Presence UI could not be started: {e}. Running in voice-only mode.")
 
@@ -172,8 +172,9 @@ def main():
     parser.add_argument("--benchmark", action="store_true", help="Run performance & latency benchmark")
     parser.add_argument("--no-ui", action="store_true", help="Run in headless / voice-only mode without desktop presence overlay")
     parser.add_argument("--startup", action="store_true", help="Indicates launch by Windows startup")
-    parser.add_argument("--minimized", action="store_true", help="Start minimized")
     parser.add_argument("--set-api-key", type=str, metavar="KEY", help="Securely store Gemini API key in Windows DPAPI store")
+    parser.add_argument("--setup", "--configure", action="store_true", dest="setup", help="Open configuration and onboarding dropdown UI")
+    parser.add_argument("--reset-config", action="store_true", help="Reset user configuration to clean install state")
     parser.add_argument("--enable-startup", action="store_true", help="Register application in Windows startup")
     parser.add_argument("--disable-startup", action="store_true", help="Unregister application from Windows startup")
 
@@ -207,7 +208,14 @@ def main():
             print("\n[ERROR] Failed to save credential in Windows DPAPI store.\n")
             sys.exit(1)
 
-    # 5. Startup configuration CLI
+    # 5. Reset Config CLI
+    if args.reset_config:
+        from ultron.core.user_config import reset_user_config
+        reset_user_config()
+        print("\n[OK] User configuration reset to initial clean install state.\n")
+        sys.exit(0)
+
+    # 6. Startup configuration CLI
     if args.enable_startup:
         sm = StartupManager()
         ok = sm.enable_startup()
@@ -228,14 +236,14 @@ def main():
             print("\n[ERROR] Failed to unregister Windows startup.\n")
             sys.exit(1)
 
-    # 6. Single-instance enforcement for live agent
+    # 7. Single-instance enforcement for live agent
     single_instance = SingleInstanceLock()
     if not single_instance.acquire():
         print(f"\n[!] {__product_name__} is already running in another window or background process.")
         sys.exit(0)
 
     try:
-        asyncio.run(run_live_agent(no_ui=args.no_ui, is_startup=args.startup))
+        asyncio.run(run_live_agent(no_ui=args.no_ui, is_startup=args.startup, force_setup=args.setup))
     except KeyboardInterrupt:
         print("\nExited.")
     except Exception as e:

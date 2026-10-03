@@ -40,6 +40,7 @@ class AudioStreamEngine:
         self._playback_queue: asyncio.Queue[bytes] = asyncio.Queue()
         self._is_running = False
         self._is_playing = False
+        self.playback_start_time = 0.0
         self._playback_task: Optional[asyncio.Task] = None
         self._playback_epoch = 0
         self._loop: Optional[asyncio.AbstractEventLoop] = None
@@ -122,15 +123,18 @@ class AudioStreamEngine:
                             logger.debug(f"[Audio Playback] Output write exception: {e}")
 
                 if self._playback_queue.empty():
-                    self._is_playing = False
-                    if self.on_playback_finished:
-                        try:
-                            if self._loop and self._loop.is_running():
-                                self._loop.call_soon_threadsafe(self.on_playback_finished)
-                            else:
-                                self.on_playback_finished()
-                        except Exception as cb_err:
-                            logger.debug(f"[Audio Playback] on_playback_finished callback notice: {cb_err}")
+                    # Brief debounce to prevent packet-jitter flapping during streaming model turn
+                    await asyncio.sleep(0.035)
+                    if self._playback_queue.empty() and current_epoch == self._playback_epoch:
+                        self._is_playing = False
+                        if self.on_playback_finished:
+                            try:
+                                if self._loop and self._loop.is_running():
+                                    self._loop.call_soon_threadsafe(self.on_playback_finished)
+                                else:
+                                    self.on_playback_finished()
+                            except Exception as cb_err:
+                                logger.debug(f"[Audio Playback] on_playback_finished callback notice: {cb_err}")
 
             except asyncio.CancelledError:
                 break
@@ -141,8 +145,10 @@ class AudioStreamEngine:
     def enqueue_playback(self, pcm_24k_bytes: bytes):
         """Enqueues cloud model speech chunk to be played."""
         if self._is_running and pcm_24k_bytes:
+            if not self._is_playing:
+                self.playback_start_time = time.time()
+                self._is_playing = True
             self._playback_queue.put_nowait(pcm_24k_bytes)
-            self._is_playing = True
 
     def clear_playback(self) -> float:
         """
@@ -170,6 +176,7 @@ class AudioStreamEngine:
                 logger.debug(f"[Audio Engine] Output stream flush notice: {e}")
 
         self._is_playing = False
+        self.playback_start_time = 0.0
         t_elapsed = (time.perf_counter() - t0) * 1000.0
         self.cancellation_latency_ms = round(t_elapsed, 2)
         self.last_cancellation_time = time.time()

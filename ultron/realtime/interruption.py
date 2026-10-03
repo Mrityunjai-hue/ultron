@@ -20,14 +20,16 @@ class InterruptionManager:
     def __init__(
         self,
         audio_engine: AudioStreamEngine,
-        rms_threshold: float = 0.035,
-        consecutive_frames_required: int = 2,
+        rms_threshold: float = 0.20,
+        consecutive_frames_required: int = 4,
         on_interruption: Optional[Callable[[float], None]] = None,
+        enabled: bool = True,
     ):
         self.audio_engine = audio_engine
         self.rms_threshold = rms_threshold
         self.consecutive_frames_required = consecutive_frames_required
         self.on_interruption = on_interruption
+        self.enabled = enabled
 
         self._consecutive_loud_frames = 0
         self.last_interruption_timestamp = 0.0
@@ -35,8 +37,8 @@ class InterruptionManager:
 
     def process_input_frame(self, pcm_bytes: bytes, rms_energy: float):
         """Evaluates incoming input frame for barge-in if model is actively speaking."""
-        # Only evaluate barge-in if ULTRON is currently outputting sound
-        if not self.audio_engine.is_playing:
+        # Only evaluate barge-in if enabled and ULTRON is currently outputting sound
+        if not self.enabled or not self.audio_engine.is_playing:
             self._consecutive_loud_frames = 0
             return
 

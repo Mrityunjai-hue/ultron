@@ -88,59 +88,62 @@ class HitTester:
             rx = notch_right
 
             # Bottom navigation buttons (Back & Continue/Finish)
-            if 410 <= rel_y <= 462:
-                if (lx + 35) <= rel_x <= (lx + 165):
+            if 420 <= rel_y <= 492:
+                if (lx + 30) <= rel_x <= (lx + 180):
                     return HTCLIENT, ClickTarget("ONBOARDING_BACK")
-                elif (rx - 215) <= rel_x <= (rx - 35):
+                elif (rx - 235) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_NEXT")
 
             # Step-specific interactive controls
             if onboarding_step == 1:
-                if 175 <= rel_y <= 232 and (lx + 35) <= rel_x <= (rx - 35):
+                if 148 <= rel_y <= 218 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_FIELD_OWNER")
-                elif 265 <= rel_y <= 322 and (lx + 35) <= rel_x <= (rx - 35):
+                elif 224 <= rel_y <= 296 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_FIELD_HINT")
 
             elif onboarding_step == 2:
-                if 170 <= rel_y <= 235 and (lx + 35) <= rel_x <= (rx - 35):
+                if 145 <= rel_y <= 212 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_OPT_ADDR_PREF")
-                elif 245 <= rel_y <= 310 and (lx + 35) <= rel_x <= (rx - 35):
+                elif 214 <= rel_y <= 278 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_OPT_ADDR_CUSTOM")
-                elif 320 <= rel_y <= 375 and (lx + 35) <= rel_x <= (rx - 35):
+                elif 280 <= rel_y <= 340 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_FIELD_ADDRESS")
 
             elif onboarding_step == 3:
-                if 170 <= rel_y <= 235 and (lx + 35) <= rel_x <= (rx - 35):
+                if 145 <= rel_y <= 212 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_OPT_ID_ULTRON")
-                elif 245 <= rel_y <= 310 and (lx + 35) <= rel_x <= (rx - 35):
+                elif 214 <= rel_y <= 278 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_OPT_ID_CUSTOM")
-                elif 320 <= rel_y <= 375 and (lx + 35) <= rel_x <= (rx - 35):
+                elif 280 <= rel_y <= 340 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_FIELD_ASSISTANT")
 
             elif onboarding_step == 4:
-                if 175 <= rel_y <= 225:
-                    if (lx + 35) <= rel_x <= (lx + 195):
+                w_tot = rx - lx - 70  # Inner usable width
+                pill_w3 = (w_tot - 20) / 3
+                if 136 <= rel_y <= 184:
+                    if (lx + 35) <= rel_x <= (lx + 35 + pill_w3):
                         return HTCLIENT, ClickTarget("ONBOARDING_VOICE", "Puck")
-                    elif (lx + 205) <= rel_x <= (lx + 365):
+                    elif (lx + 35 + pill_w3 + 10) <= rel_x <= (lx + 35 + (pill_w3 + 10) * 2):
                         return HTCLIENT, ClickTarget("ONBOARDING_VOICE", "Charon")
-                    elif (lx + 375) <= rel_x <= (rx - 35):
+                    elif (lx + 35 + (pill_w3 + 10) * 2) <= rel_x <= (rx - 35):
                         return HTCLIENT, ClickTarget("ONBOARDING_VOICE", "Aoede")
-                elif 235 <= rel_y <= 285:
-                    if (lx + 35) <= rel_x <= (lx + 280):
+                elif 184 <= rel_y <= 234:
+                    pill_w2 = (w_tot - 10) / 2
+                    if (lx + 35) <= rel_x <= (lx + 35 + pill_w2):
                         return HTCLIENT, ClickTarget("ONBOARDING_VOICE", "Fenrir")
-                    elif (lx + 295) <= rel_x <= (rx - 35):
+                    elif (lx + 35 + pill_w2 + 10) <= rel_x <= (rx - 35):
                         return HTCLIENT, ClickTarget("ONBOARDING_VOICE", "Kore")
-                elif 305 <= rel_y <= 345 and (lx + 35) <= rel_x <= (rx - 35):
+                elif 250 <= rel_y <= 294 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_STYLE", "Concise & Authoritative")
-                elif 350 <= rel_y <= 390 and (lx + 35) <= rel_x <= (rx - 35):
+                elif 294 <= rel_y <= 340 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_STYLE", "Analytical & Detailed")
 
             elif onboarding_step == 5:
-                if 305 <= rel_y <= 375 and (lx + 35) <= rel_x <= (rx - 35):
+                if 265 <= rel_y <= 355 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_TOGGLE_MEMORY")
 
             elif onboarding_step == 6:
-                if 215 <= rel_y <= 290 and (lx + 35) <= rel_x <= (rx - 35):
+                if 145 <= rel_y <= 220 and (lx + 30) <= rel_x <= (rx - 30):
                     return HTCLIENT, ClickTarget("ONBOARDING_TOGGLE_STARTUP")
 
             if 0 <= rel_y <= notch_h:

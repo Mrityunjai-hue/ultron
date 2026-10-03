@@ -38,19 +38,48 @@ def load_dotenv_fallback():
 load_dotenv_fallback()
 
 
+def _get_env_float(name: str, default: float) -> float:
+    try:
+        val = os.getenv(name)
+        return float(val) if val is not None else default
+    except (ValueError, TypeError):
+        return default
+
+def _get_env_int(name: str, default: int) -> int:
+    try:
+        val = os.getenv(name)
+        return int(val) if val is not None else default
+    except (ValueError, TypeError):
+        return default
+
+def _get_env_bool(name: str, default: bool) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return val.strip().lower() in ("true", "1", "yes", "on")
+
 @dataclass
 class AudioConfig:
     input_sample_rate: int = 16000        # 16 kHz PCM16 for Gemini Live input
     output_sample_rate: int = 24000       # 24 kHz PCM16 for Gemini Live output
     channels: int = 1
     chunk_size: int = 512                 # 32ms frames @ 16kHz
-    barge_in_rms_threshold: float = 0.035 # Minimum RMS to trigger local barge-in
-    barge_in_consecutive_frames: int = 2  # Debounce false positives
+    barge_in_rms_threshold: float = field(
+        default_factory=lambda: _get_env_float("ULTRON_BARGE_IN_RMS", _get_env_float("BARGE_IN_RMS_THRESHOLD", 0.20))
+    ) # Calibrated vocal energy during speaker playback
+    barge_in_consecutive_frames: int = field(
+        default_factory=lambda: _get_env_int("ULTRON_BARGE_IN_FRAMES", _get_env_int("BARGE_IN_CONSECUTIVE_FRAMES", 4))
+    ) # 128ms debounce to reject clicks/room noise/speaker bleed
+    enable_local_barge_in: bool = field(
+        default_factory=lambda: _get_env_bool("ULTRON_ENABLE_LOCAL_BARGE_IN", True)
+    ) # Toggle local energy-based playback cancellation
 
 
 @dataclass
 class ModelConfig:
-    model: str = "gemini-2.5-flash-native-audio-latest"  # Primary Gemini Live bidiGenerateContent model
+    model: str = field(
+        default_factory=lambda: os.getenv("ULTRON_MODEL", "gemini-2.5-flash-native-audio-latest")
+    )  # Primary Gemini Live bidiGenerateContent model (e.g. gemini-2.5-flash-native-audio-latest or gemini-2.0-flash-exp)
     voice_name: str = "Puck"                             # Options: Aoede, Charon, Fenrir, Kore, Puck
     system_instruction: str = (
         "You are ULTRON, a sovereign, concise, calculating AI entity. "

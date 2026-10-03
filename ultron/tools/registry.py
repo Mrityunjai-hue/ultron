@@ -367,7 +367,7 @@ TOOL_CAPABILITIES: Dict[str, ToolCapability] = {
     # Phase 7 — Chrome Browser Capabilities
     "chrome_launch": ToolCapability(
         name="chrome_launch",
-        description="Launches or connects to Google Chrome in a controlled debugging session.",
+        description="Opens Google Chrome (only needed when opening a blank browser). If user wants a specific site or search, call chrome_navigate or chrome_search directly.",
         parameters={
             "type": "object",
             "properties": {
@@ -388,7 +388,7 @@ TOOL_CAPABILITIES: Dict[str, ToolCapability] = {
     ),
     "chrome_navigate": ToolCapability(
         name="chrome_navigate",
-        description="Navigates the active Chrome tab to a validated HTTP or HTTPS web address.",
+        description="Navigates directly to any website or URL (e.g. 'https://www.youtube.com' or 'https://www.google.com'). Automatically launches and connects to Chrome in one step.",
         parameters={
             "type": "object",
             "properties": {
@@ -402,7 +402,7 @@ TOOL_CAPABILITIES: Dict[str, ToolCapability] = {
     ),
     "chrome_search": ToolCapability(
         name="chrome_search",
-        description="Performs a web search in Chrome and navigates to the search results page.",
+        description="Searches YouTube, Google, or the web in Chrome (e.g. query='Arijit Singh songs' or 'weather'). Automatically launches Chrome if closed and displays search results in one step.",
         parameters={
             "type": "object",
             "properties": {

@@ -111,7 +111,7 @@ class PresenceManager:
 
         self.runtime.tools.execute = _monitored_execute
 
-    def start(self):
+    def start(self, force_onboarding: bool = False):
         """Starts native desktop overlay with strict failure isolation."""
         if sys.platform != "win32":
             logger.warning("[Presence] Non-Windows platform detected; desktop overlay disabled.")
@@ -126,16 +126,10 @@ class PresenceManager:
                 on_notch_click=self._on_notch_click,
             )
 
-            # Check if First-Run Liquid Onboarding is required
-            if is_first_run_required():
-                logger.info("[Presence] First launch detected -> Initiating Liquid Onboarding Experience")
-                self.onboarding_ctrl = OnboardingController(
-                    on_complete=self._on_onboarding_completed,
-                    on_wake=self.window.wake,
-                )
-                self.window.set_onboarding_controller(self.onboarding_ctrl)
-                # Liquid expansion from top notch into onboarding container
-                self.choreographer.set_state("ONBOARDING")
+            # Check if First-Run Liquid Onboarding is required or requested
+            if force_onboarding or is_first_run_required():
+                logger.info("[Presence] Launching Liquid Onboarding / Configuration Experience")
+                self.start_onboarding()
             else:
                 self.choreographer.set_state("IDLE")
 
@@ -149,6 +143,18 @@ class PresenceManager:
         except Exception as e:
             logger.error(f"[Presence] Failed to initialize overlay window: {e}. Voice engine remains active.", exc_info=True)
             self.is_active = False
+
+    def start_onboarding(self):
+        """Manually triggers or re-opens the onboarding / configuration window."""
+        self.onboarding_ctrl = OnboardingController(
+            on_complete=self._on_onboarding_completed,
+            on_wake=self.window.wake if self.window else None,
+        )
+        if self.window:
+            self.window.set_onboarding_controller(self.onboarding_ctrl)
+            self.window.wake()
+        # Liquid expansion from top notch into onboarding container
+        self.choreographer.set_state("ONBOARDING")
 
     def _on_onboarding_completed(self, cfg: UserConfig):
         """Called when user finalizes setup: updates runtime and executes liquid collapse."""
@@ -209,8 +215,13 @@ class PresenceManager:
             self.coordinator.dismiss_confirmation()
 
     def _on_notch_click(self):
-        """Handles user clicking the compact notch body."""
-        logger.info("[Presence] Notch body clicked.")
+        """Handles user clicking the compact notch body: opens setup dropdown."""
+        logger.info("[Presence] Notch body clicked -> Toggling configuration dropdown")
+        if self.choreographer.current_state_name in ("IDLE", "RETRACTED", "TOOL_COMPLETE"):
+            self.start_onboarding()
+        elif self.choreographer.current_state_name == "ONBOARDING":
+            if self.window:
+                self.window.wake()
 
     def stop(self):
         """Gracefully halts overlay window."""

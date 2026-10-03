@@ -196,20 +196,30 @@ class UltronOverlayWindow:
                 self.choreographer.set_gaze(0.0, 0.0)
                 return win32con.HTTRANSPARENT
 
+        elif msg == win32con.WM_MOUSEACTIVATE:
+            return win32con.MA_ACTIVATE
+
         elif msg == win32con.WM_LBUTTONDOWN:
             if user32:
                 try:
+                    user32.SetForegroundWindow(hwnd)
                     user32.SetFocus(hwnd)
                 except Exception:
                     pass
 
-            x = win32api.LOWORD(lparam)
-            y = win32api.HIWORD(lparam)
+            # Convert client coordinates to screen coordinates
+            cx = win32api.LOWORD(lparam)
+            cy = win32api.HIWORD(lparam)
+            if cx > 32767: cx -= 65536
+            if cy > 32767: cy -= 65536
+            screen_x = cx + self.window_left
+            screen_y = cy
+
             nw = self.choreographer.size.x + self.choreographer.hover_lift.current
             nh = self.choreographer.size.y
             state = self.choreographer.current_state_name
             onb_step = self.onboarding_controller.current_step if self.onboarding_controller else 1
-            ht, target = self.hit_tester.test_point(x, y, nw, nh, state, onboarding_step=onb_step)
+            ht, target = self.hit_tester.test_point(screen_x, screen_y, nw, nh, state, onboarding_step=onb_step)
 
             if state == "ONBOARDING" and self.onboarding_controller:
                 ctrl = self.onboarding_controller
@@ -250,13 +260,19 @@ class UltronOverlayWindow:
             return 0
 
         elif msg == win32con.WM_LBUTTONUP:
-            x = win32api.LOWORD(lparam)
-            y = win32api.HIWORD(lparam)
+            # Convert client coordinates to screen coordinates
+            cx = win32api.LOWORD(lparam)
+            cy = win32api.HIWORD(lparam)
+            if cx > 32767: cx -= 65536
+            if cy > 32767: cy -= 65536
+            screen_x = cx + self.window_left
+            screen_y = cy
+
             nw = self.choreographer.size.x + self.choreographer.hover_lift.current
             nh = self.choreographer.size.y
             state = self.choreographer.current_state_name
             onb_step = self.onboarding_controller.current_step if self.onboarding_controller else 1
-            ht, target = self.hit_tester.test_point(x, y, nw, nh, state, onboarding_step=onb_step)
+            ht, target = self.hit_tester.test_point(screen_x, screen_y, nw, nh, state, onboarding_step=onb_step)
 
             if state == "ONBOARDING" and self.onboarding_controller:
                 if target.target_type == "ONBOARDING_NEXT":
@@ -358,7 +374,6 @@ class UltronOverlayWindow:
             win32con.WS_EX_LAYERED
             | win32con.WS_EX_TOPMOST
             | win32con.WS_EX_TOOLWINDOW
-            | win32con.WS_EX_NOACTIVATE
         )
         style = win32con.WS_POPUP | win32con.WS_VISIBLE
 

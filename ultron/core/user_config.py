@@ -97,7 +97,7 @@ def get_user_config_path(config_dir: Optional[Path] = None) -> Path:
 def is_first_run_required(config_dir: Optional[Path] = None) -> bool:
     """
     Checks if first-run onboarding is required.
-    Returns True if user_config.json is absent, corrupted, or first_run_completed is False.
+    Returns True if user_config.json is absent, corrupted, owner_name is empty/test placeholder, or first_run_completed is False.
     """
     path = get_user_config_path(config_dir)
     if not path.exists():
@@ -105,6 +105,9 @@ def is_first_run_required(config_dir: Optional[Path] = None) -> bool:
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
+            owner = str(data.get("owner_name", "")).strip()
+            if not owner or owner in ("CleanInstallUser", "TestUser"):
+                return True
             return not bool(data.get("first_run_completed", False))
     except Exception as ex:
         logger.warning(f"[UserConfig] Error reading config at {path}: {ex}. Requiring first-run setup.")

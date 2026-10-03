@@ -42,6 +42,7 @@ class OnboardingController:
         self,
         on_complete: Optional[Callable[[UserConfig], None]] = None,
         on_wake: Optional[Callable[[], None]] = None,
+        load_existing: bool = False,
     ):
         self.on_complete = on_complete
         self.on_wake = on_wake
@@ -71,6 +72,31 @@ class OnboardingController:
 
         # Step 06: Startup
         self.start_with_windows: bool = False
+
+        # Pre-fill from existing user config if explicitly requested
+        if load_existing:
+            try:
+                from ultron.core.user_config import load_user_config
+                existing = load_user_config()
+                if existing and existing.owner_name and existing.owner_name not in ("CleanInstallUser", "TestUser"):
+                    self.owner_name = existing.owner_name
+                    self.pronunciation_hint = existing.pronunciation_hint or ""
+                    if existing.addressing_name and existing.addressing_name != existing.owner_name:
+                        self.addressing_mode = "custom"
+                        self.custom_address = existing.addressing_name
+                    if existing.assistant_name and existing.assistant_name != "ULTRON":
+                        self.identity_mode = "custom"
+                        self.custom_assistant_name = existing.assistant_name
+                    if existing.voice_preference:
+                        self.voice_name = existing.voice_preference
+                    if existing.response_style:
+                        self.response_style = existing.response_style
+                    if existing.preferred_language:
+                        self.language = existing.preferred_language
+                    self.allow_memory = existing.allow_explicit_memory
+                    self.start_with_windows = existing.start_with_windows
+            except Exception:
+                pass
 
         # Input focus tracking
         self.active_field: str = "owner_name"  # 'owner_name', 'pronunciation_hint', 'custom_address', 'custom_assistant_name'

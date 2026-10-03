@@ -82,15 +82,24 @@ class UltronRuntime:
             rms_threshold=self.config.audio.barge_in_rms_threshold,
             consecutive_frames_required=self.config.audio.barge_in_consecutive_frames,
             on_interruption=self._on_barge_in_detected,
+            enabled=getattr(self.config.audio, "enable_local_barge_in", True),
         )
 
         self.provider = GeminiLiveProvider(self.config)
 
         self._running = False
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._input_audio_queue: asyncio.Queue[bytes] = asyncio.Queue(maxsize=100)
+        self._send_task: Optional[asyncio.Task] = None
         self._receive_task: Optional[asyncio.Task] = None
         self._speech_start_time = 0.0
         self._awaiting_first_response = False
         self._pending_turn_complete = False
+
+    @property
+    def is_running(self) -> bool:
+        """Returns True if the realtime engine audio and connection loops are active."""
+        return self._running
 
     def _transition(self, new_state: ActivityState, operation: str = "none", message: str = ""):
         """Publishes state change event."""
@@ -105,9 +114,21 @@ class UltronRuntime:
 
     def _on_playback_finished(self):
         """Called when audio engine speaker queue is completely drained."""
-        if self.state == ActivityState.RESPONDING:
-            self._transition(ActivityState.IDLE)
-            self._pending_turn_complete = False
+        if self._pending_turn_complete or self.state == ActivityState.RESPONDING:
+            if not self.audio.is_playing:
+                self._transition(ActivityState.IDLE)
+                self._pending_turn_complete = False
+
+    def _queue_audio_chunk(self, pcm_bytes: bytes):
+        """Places audio frame into queue without blocking."""
+        if not self._input_audio_queue.full():
+            self._input_audio_queue.put_nowait(pcm_bytes)
+        else:
+            try:
+                self._input_audio_queue.get_nowait()
+            except (asyncio.QueueEmpty, ValueError):
+                pass
+            self._input_audio_queue.put_nowait(pcm_bytes)
 
     def _on_input_audio_chunk(self, pcm_bytes: bytes, rms_energy: float):
         """Processes incoming microphone frame on audio thread."""
@@ -124,12 +145,11 @@ class UltronRuntime:
                 self._awaiting_first_response = True
                 self._transition(ActivityState.LISTENING)
 
-        # 3. Stream chunk to Gemini Live
-        if self.provider.is_connected:
+        # 3. Stream chunk to Gemini Live via thread-safe audio pump queue
+        if self._running and self._loop and not self._loop.is_closed():
             try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(self.provider.send_audio_chunk(pcm_bytes))
-            except RuntimeError:
+                self._loop.call_soon_threadsafe(self._queue_audio_chunk, pcm_bytes)
+            except Exception:
                 pass
 
     def _on_barge_in_detected(self, total_latency_ms: float):
@@ -139,17 +159,32 @@ class UltronRuntime:
         self.metrics["cancellation_latency_ms"] = self.audio.cancellation_latency_ms
         self._transition(ActivityState.INTERRUPTED, message=f"Interrupted in {total_latency_ms:.1f}ms")
         self._transition(ActivityState.LISTENING)
-        try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(self.provider.interrupt())
-        except RuntimeError:
-            pass
+        if self._loop and not self._loop.is_closed():
+            try:
+                self._loop.call_soon_threadsafe(lambda: asyncio.create_task(self.provider.interrupt()))
+            except Exception:
+                pass
+
+    async def _audio_sender_loop(self):
+        """High-performance non-blocking audio streamer loop."""
+        while self._running:
+            try:
+                pcm_bytes = await self._input_audio_queue.get()
+                if self.provider.is_connected:
+                    await self.provider.send_audio_chunk(pcm_bytes)
+                self._input_audio_queue.task_done()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.debug(f"[Audio Sender] Stream error: {e}")
+                await asyncio.sleep(0.01)
 
     async def start(self):
         """Starts real-time session and streaming audio loops."""
         t0 = time.perf_counter()
         logger.info("Initializing ULTRON V3 Realtime Engine...")
         self._running = True
+        self._loop = asyncio.get_running_loop()
 
         # 1. Connect to Gemini Live
         await self.provider.connect()
@@ -157,7 +192,8 @@ class UltronRuntime:
         # 2. Start hardware audio streams
         await self.audio.start()
 
-        # 3. Start cloud event listener
+        # 3. Start cloud event listener & audio sender tasks
+        self._send_task = asyncio.create_task(self._audio_sender_loop())
         self._receive_task = asyncio.create_task(self._event_receive_loop())
 
         self.metrics["startup_time_ms"] = round((time.perf_counter() - t0) * 1000.0, 2)
@@ -181,6 +217,7 @@ class UltronRuntime:
 
                     # A. Audio Output Stream Chunk (24kHz PCM)
                     if event_type == "audio":
+                        self._pending_turn_complete = False
                         if self._awaiting_first_response and self._speech_start_time > 0:
                             latency = (time.perf_counter() - self._speech_start_time) * 1000.0
                             self.metrics["first_response_latency_ms"] = round(latency, 1)
@@ -282,6 +319,13 @@ class UltronRuntime:
         self._running = False
         self.cancel_active_task(reason="Runtime shutdown")
         await self.tools.app_registry.shutdown_all()
+        if self._send_task:
+            self._send_task.cancel()
+            try:
+                await self._send_task
+            except asyncio.CancelledError:
+                pass
+
         if self._receive_task:
             self._receive_task.cancel()
             try:
