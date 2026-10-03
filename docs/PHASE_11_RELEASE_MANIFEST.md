@@ -5,7 +5,7 @@
 **Target Platform:** Windows 10 / 11 (x86_64 / AMD64)  
 **CI/CD Pipeline:** GitHub Actions Windows Runner  
 **Provenance Verification:** SHA256 Immutable Digest  
-**Git Commit:** `8a99c02fb5cf441c066a041a9dd5d957d4e87262`  
+**Git Commit:** `a2cc6a25105fc5c2f954009f75a7ead39d0c2463`  
 
 ---
 
@@ -13,9 +13,9 @@
 
 | Artifact | File Name | Size | SHA256 Digest |
 | :--- | :--- | :--- | :--- |
-| **Primary Setup Installer** | `Ultron-Setup-0.1.0.py` | 79.86 MB | `74d13e560a41883ea07f516d9914fbbe96ecd6953ece68f9824ac67a53fcbe07` |
-| **Portable Standalone Bundle** | `Ultron-v0.1.0-windows-x64.zip` | 59.93 MB | `ab09277b95038797ab76fabf4782042600f13fe044992fda3e66dc0acae28687` |
-| **Executable Binary** | `ultron.exe` | 22.09 MB | `a77892dc6b5a9855a74ceb4ec090d1800cfec808c80d3ead4eb8770bfb603a92` |
+| **Primary Setup Installer** | `Ultron-Setup-0.1.0.py` | 79.87 MB | `f5c6261df4b16905a8ef1483481ca6db92d32a0034bc38e2c3e70eb6f391431b` |
+| **Portable Standalone Bundle** | `Ultron-v0.1.0-windows-x64.zip` | 59.93 MB | `22065614b2ff2d4201005131749ab259e24b75206a0fc3c773fce30a62988fb1` |
+| **Executable Binary** | `ultron.exe` | 22.09 MB | `7c97f89f607f4d2116c22ec77b6208a18cb3856cb6033bf6ac87ef952450a6e4` |
 | **Software Bill of Materials** | `sbom.json` | 0.23 MB | `48e4ca6477cff27750119d96f8b27e4531d583c10385d0882c5f7c22019d8f1f` |
 
 ---
