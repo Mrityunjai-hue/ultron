@@ -404,11 +404,13 @@ class UltronOverlayWindow:
                 break
 
     def _render_loop(self):
-        """Adaptive 60 FPS frame-paced render loop with idle sleep gating."""
+        """Adaptive 60 FPS frame-paced render loop with zero-overhead idle sleep."""
         last_frame_time = time.perf_counter()
         target_frame_dt = 1.0 / 60.0 # 60 FPS cap
         fps_counter = 0
         fps_start = time.perf_counter()
+        last_rendered_state = None
+        was_settled_idle = False
 
         while self._running:
             t0 = time.perf_counter()
@@ -428,13 +430,18 @@ class UltronOverlayWindow:
             amp = self.audio_viz.update(dt)
             self.choreographer.update(dt, amp)
 
-            # 3. Render and Blit Frame via UpdateLayeredWindow
-            if self.hwnd and self.renderer:
+            # 3. Determine if frame needs rendering
+            is_active_anim = not self.choreographer.is_all_settled() or self.audio_viz.is_active or (self.choreographer.current_state_name != "IDLE")
+            should_render = is_active_anim or (not was_settled_idle)
+
+            if should_render and self.hwnd and self.renderer:
                 try:
                     img = self.renderer.render_frame(self.choreographer, self.audio_viz, dt)
                     self._update_layered_window(img)
                 except Exception as e:
                     logger.debug(f"[Render Loop] Blit exception: {e}")
+
+            was_settled_idle = not is_active_anim
 
             # 4. Measure Frame Telemetry
             t_elapsed = time.perf_counter() - t0
@@ -445,10 +452,10 @@ class UltronOverlayWindow:
                 fps_counter = 0
                 fps_start = time.perf_counter()
 
-            # 5. Adaptive Sleep Gating (Idle Sleep Policy)
-            if self.choreographer.is_all_settled() and self.choreographer.current_state_name == "IDLE" and not self.audio_viz.is_active:
-                # Sleep up to 50ms between ticks for slow respiration (~20 Hz wake), waking immediately on event
-                self._wake_event.wait(timeout=0.05)
+            # 5. Adaptive Sleep Gating (Zero-overhead idle policy)
+            if not is_active_anim:
+                # Sleep deeply when static, waking immediately (<0.1ms) on any event
+                self._wake_event.wait(timeout=0.10)
                 self._wake_event.clear()
             else:
                 # Active 60 FPS pacing

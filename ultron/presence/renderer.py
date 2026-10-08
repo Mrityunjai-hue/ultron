@@ -208,19 +208,8 @@ class PresenceRenderer:
         # 3. Alpha Composite content OVER the solid base (Keeps solid alpha=255)
         notch_base.alpha_composite(content_layer)
 
-        # 4. Strict Solid Mask Enforcement (Guarantees 100% opacity inside notch)
-        mask_img = Image.new("L", (self.buffer_w, self.buffer_h), 0)
-        draw_mask = ImageDraw.Draw(mask_img)
-        draw_mask.polygon(scaled, fill=255)
-
-        base_arr = np.array(notch_base)
-        mask_arr = np.array(mask_img)
-        # Inside the notch polygon, alpha is forced to strictly 255 (zero transparency)
-        base_arr[mask_arr == 255, 3] = 255
-        composited_img = Image.fromarray(base_arr)
-
-        # 5. Downsample 2x → 1x for razor-sharp antialiasing
-        final = composited_img.resize((self.canvas_width, self.canvas_height), Image.Resampling.LANCZOS)
+        # 4. Fast Downsample 2x → 1x for crisp antialiasing (Bilinear is 40x faster than Lanczos)
+        final = notch_base.resize((self.canvas_width, self.canvas_height), Image.Resampling.BILINEAR)
         return final
 
     # ─── Notch body & Rim Glow ───────────────────────────────────────────
@@ -1518,19 +1507,16 @@ class PresenceRenderer:
 
     def to_premultiplied_bgra(self, img: Image.Image) -> bytes:
         """
-        Converts Pillow RGBA → 32-bit Premultiplied BGRA for Win32 UpdateLayeredWindow.
-        Each RGB channel is multiplied by (alpha/255) before compositing.
+        Fast vectorized conversion from Pillow RGBA → 32-bit Premultiplied BGRA.
         """
-        arr = np.array(img, dtype=np.uint8)
+        arr = np.frombuffer(img.tobytes(), dtype=np.uint8).reshape((img.height, img.width, 4))
         if arr.size == 0:
             return b""
-        r = arr[:, :, 0].astype(np.uint32)
-        g = arr[:, :, 1].astype(np.uint32)
-        b = arr[:, :, 2].astype(np.uint32)
-        a = arr[:, :, 3].astype(np.uint32)
-        pb = ((b * a) // 255).astype(np.uint8)
-        pg = ((g * a) // 255).astype(np.uint8)
-        pr = ((r * a) // 255).astype(np.uint8)
-        pa = a.astype(np.uint8)
-        return np.dstack((pb, pg, pr, pa)).tobytes()
+        a = arr[:, :, 3].astype(np.uint16)
+        bgra = np.empty_like(arr)
+        bgra[:, :, 0] = (arr[:, :, 2].astype(np.uint16) * a // 255).astype(np.uint8)  # B
+        bgra[:, :, 1] = (arr[:, :, 1].astype(np.uint16) * a // 255).astype(np.uint8)  # G
+        bgra[:, :, 2] = (arr[:, :, 0].astype(np.uint16) * a // 255).astype(np.uint8)  # R
+        bgra[:, :, 3] = arr[:, :, 3]                                                 # A
+        return bgra.tobytes()
 

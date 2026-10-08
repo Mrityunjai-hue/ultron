@@ -158,12 +158,8 @@ class UltronRuntime:
                 self._awaiting_first_response = True
                 self._transition(ActivityState.LISTENING)
 
-        # 3. Stream chunk to Gemini Live via thread-safe audio pump queue
-        if self._running and self._loop and not self._loop.is_closed():
-            try:
-                self._loop.call_soon_threadsafe(self._queue_audio_chunk, pcm_bytes)
-            except Exception:
-                pass
+        # 3. Stream chunk to Gemini Live directly
+        self._queue_audio_chunk(pcm_bytes)
 
     def _on_barge_in_detected(self, total_latency_ms: float):
         """Called when user speaks during model output."""
@@ -174,7 +170,7 @@ class UltronRuntime:
         self._transition(ActivityState.LISTENING)
         if self._loop and not self._loop.is_closed():
             try:
-                self._loop.call_soon_threadsafe(lambda: asyncio.create_task(self.provider.interrupt()))
+                asyncio.create_task(self.provider.interrupt())
             except Exception:
                 pass
 
