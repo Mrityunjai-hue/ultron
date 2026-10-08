@@ -115,10 +115,22 @@ class UltronRuntime:
         raise AttributeError(f"'UltronRuntime' object has no attribute '{name}'")
 
     def _transition(self, new_state: ActivityState, operation: str = "none", message: str = ""):
-        """Publishes state change event."""
+        """Publishes state change event and displays instant user indicator."""
         if self.state != new_state:
             self.state = new_state
             logger.info(f"[State Transition] -> {new_state.value} [Op: {operation}] {message}")
+
+            # Instant console indicator for user awareness
+            icons = {
+                ActivityState.LISTENING: "🎤 [LISTENING] Hearing user voice...",
+                ActivityState.THINKING: f"⚡ [THINKING] Processing with Gemini Live ({operation or 'inference'})...",
+                ActivityState.RESPONDING: "🔊 [SPEAKING] ULTRON speaking...",
+                ActivityState.INTERRUPTED: "✋ [INTERRUPTED] Playback stopped for user speech...",
+                ActivityState.IDLE: "🎧 [IDLE] Listening on microphone...",
+            }
+            if new_state in icons:
+                print(f"\n>>> {icons[new_state]}", flush=True)
+
             self.event_bus.publish(EngineEvent(
                 state=new_state,
                 operation=operation,
@@ -151,8 +163,9 @@ class UltronRuntime:
         # 1. Evaluate local barge-in if ULTRON is currently speaking
         self.interruption.process_input_frame(pcm_bytes, rms_energy)
 
-        # 2. Track speech onset for first-response latency measurement
-        if rms_energy >= self.config.audio.barge_in_rms_threshold:
+        # 2. Track speech onset for first-response latency measurement & instant UI feedback
+        onset_thresh = getattr(self.config.audio, "speech_onset_rms_threshold", 0.025)
+        if rms_energy >= onset_thresh:
             if self.state == ActivityState.IDLE:
                 self._speech_start_time = time.perf_counter()
                 self._awaiting_first_response = True

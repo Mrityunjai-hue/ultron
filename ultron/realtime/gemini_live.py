@@ -113,13 +113,13 @@ class GeminiLiveProvider(RealtimeProvider):
                 raise
 
     async def send_audio_chunk(self, pcm_bytes: bytes) -> None:
-        """Streams a chunk of 16kHz PCM16 audio to Gemini Live."""
+        """Streams a chunk of 16kHz PCM16 audio to Gemini Live using streaming mediaChunks."""
         if not self.is_connected or not self._session:
             return
 
         try:
             await self._session.send_realtime_input(
-                audio=types.Blob(
+                media=types.Blob(
                     data=pcm_bytes,
                     mime_type="audio/pcm;rate=16000",
                 )

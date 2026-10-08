@@ -64,12 +64,15 @@ class AudioConfig:
     output_sample_rate: int = 24000       # 24 kHz PCM16 for Gemini Live output
     channels: int = 1
     chunk_size: int = 512                 # 32ms frames @ 16kHz
+    speech_onset_rms_threshold: float = field(
+        default_factory=lambda: _get_env_float("ULTRON_SPEECH_ONSET_RMS", 0.025)
+    ) # Calibrated human voice onset threshold for instant visual/audio feedback
     barge_in_rms_threshold: float = field(
-        default_factory=lambda: _get_env_float("ULTRON_BARGE_IN_RMS", _get_env_float("BARGE_IN_RMS_THRESHOLD", 0.20))
+        default_factory=lambda: _get_env_float("ULTRON_BARGE_IN_RMS", _get_env_float("BARGE_IN_RMS_THRESHOLD", 0.15))
     ) # Calibrated vocal energy during speaker playback
     barge_in_consecutive_frames: int = field(
-        default_factory=lambda: _get_env_int("ULTRON_BARGE_IN_FRAMES", _get_env_int("BARGE_IN_CONSECUTIVE_FRAMES", 4))
-    ) # 128ms debounce to reject clicks/room noise/speaker bleed
+        default_factory=lambda: _get_env_int("ULTRON_BARGE_IN_FRAMES", _get_env_int("BARGE_IN_CONSECUTIVE_FRAMES", 3))
+    ) # 96ms debounce to reject clicks/room noise/speaker bleed
     enable_local_barge_in: bool = field(
         default_factory=lambda: _get_env_bool("ULTRON_ENABLE_LOCAL_BARGE_IN", True)
     ) # Toggle local energy-based playback cancellation
