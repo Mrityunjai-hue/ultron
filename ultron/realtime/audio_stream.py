@@ -45,6 +45,7 @@ class AudioStreamEngine:
 
         self._is_running = False
         self._is_playing = False
+        self._empty_callback_count = 0
         self._playback_epoch = 0
         self.playback_start_time = 0.0
         self._loop: Optional[asyncio.AbstractEventLoop] = None
@@ -108,20 +109,26 @@ class AudioStreamEngine:
                 chunk = bytes(self._output_buffer[:needed_bytes])
                 del self._output_buffer[:needed_bytes]
                 self._is_playing = True
+                self._empty_callback_count = 0
             elif buf_len > 0:
                 # Partial chunk + pad remaining with silence
                 chunk = bytes(self._output_buffer) + b"\x00" * (needed_bytes - buf_len)
                 self._output_buffer.clear()
                 self._is_playing = True
+                self._empty_callback_count = 0
             else:
                 chunk = None
                 if self._is_playing:
-                    self._is_playing = False
-                    if self.on_playback_finished:
-                        if self._loop and self._loop.is_running():
-                            self._loop.call_soon_threadsafe(self.on_playback_finished)
-                        else:
-                            self.on_playback_finished()
+                    self._empty_callback_count += 1
+                    # Debounce ~150ms of silence before declaring playback finished (approx 7 callbacks @ 24kHz/512)
+                    if self._empty_callback_count >= 7:
+                        self._is_playing = False
+                        self._empty_callback_count = 0
+                        if self.on_playback_finished:
+                            if self._loop and self._loop.is_running():
+                                self._loop.call_soon_threadsafe(self.on_playback_finished)
+                            else:
+                                self.on_playback_finished()
 
         if chunk:
             outdata[:] = np.frombuffer(chunk, dtype=np.int16).reshape(-1, 1)
